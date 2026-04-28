@@ -1,0 +1,14 @@
+Create a high-quality anime-style illustration based on the provided reference image. The character must closely resemble the original person's facial features, expression, and identity with professional-level accuracy.
+
+Style: premium anime, cinematic, ultra-detailed, masterpiece quality  
+Resolution: 8K, ultra high resolution, ultra sharp focus  
+Rendering: octane render, global illumination, realistic shading  
+Composition: portrait, half-body framing (chest-up), centered subject  
+Lighting: soft cinematic lighting, subtle rim light, natural skin tones, detailed shadows and highlights  
+Details: highly refined facial features, expressive eyes, realistic hair strands, smooth skin texture, sharp linework  
+Color: vibrant yet balanced color grading, professional tone mapping  
+Background: soft blurred background (bokeh), minimalistic or slightly stylized to enhance subject focus  
+
+Preserve identity from the reference image strictly — do not alter face structure, proportions, or key features.
+
+Additional enhancements: depth of field, subtle glow, cinematic atmosphere, high contrast clarity, clean and polished finish
