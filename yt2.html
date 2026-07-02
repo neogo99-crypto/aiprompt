@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Professional YouTube Player</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Poppins,sans-serif;
+}
+
+body{
+
+background:
+linear-gradient(135deg,#0f172a,#1e293b,#0f172a);
+
+min-height:100vh;
+
+display:flex;
+justify-content:center;
+align-items:center;
+padding:40px;
+
+}
+
+.container{
+
+width:100%;
+max-width:1000px;
+
+background:rgba(255,255,255,.08);
+
+backdrop-filter:blur(18px);
+
+border-radius:25px;
+
+padding:35px;
+
+box-shadow:
+0 25px 60px rgba(0,0,0,.35);
+
+}
+
+h1{
+
+color:white;
+
+text-align:center;
+
+font-weight:600;
+
+margin-bottom:8px;
+
+}
+
+.subtitle{
+
+text-align:center;
+
+color:#cbd5e1;
+
+margin-bottom:30px;
+
+}
+
+.input-group{
+
+display:flex;
+
+gap:15px;
+
+flex-wrap:wrap;
+
+}
+
+input{
+
+flex:1;
+
+padding:18px;
+
+border:none;
+
+border-radius:15px;
+
+font-size:16px;
+
+outline:none;
+
+background:white;
+
+}
+
+button{
+
+padding:18px 35px;
+
+border:none;
+
+border-radius:15px;
+
+background:#2563eb;
+
+color:white;
+
+font-size:16px;
+
+font-weight:600;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+button:hover{
+
+background:#1d4ed8;
+
+transform:translateY(-2px);
+
+}
+
+.player{
+
+margin-top:35px;
+
+border-radius:20px;
+
+overflow:hidden;
+
+box-shadow:
+0 20px 40px rgba(0,0,0,.35);
+
+display:none;
+
+}
+
+iframe{
+
+width:100%;
+
+aspect-ratio:16/9;
+
+border:none;
+
+}
+
+.info{
+
+margin-top:25px;
+
+color:#cbd5e1;
+
+font-size:14px;
+
+line-height:1.7;
+
+}
+
+.success{
+
+color:#22c55e;
+
+margin-top:15px;
+
+font-weight:600;
+
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>Professional YouTube Player</h1>
+
+<div class="subtitle">
+Paste YouTube URL / Embed URL / Video ID
+</div>
+
+<div class="input-group">
+
+<input
+id="youtube"
+placeholder='Example:
+https://www.youtube.com/watch?v=nm3jDf4ofTo'>
+
+<button onclick="runPlayer()">
+▶ RUN
+</button>
+
+</div>
+
+<div id="status" class="success"></div>
+
+<div class="player" id="player">
+
+<iframe
+id="frame"
+allowfullscreen
+allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share">
+</iframe>
+
+</div>
+
+<div class="info">
+
+<b>Supported Formats</b>
+
+<br><br>
+
+✔ https://youtu.be/xxxx
+
+<br>
+
+✔ https://youtube.com/watch?v=xxxx
+
+<br>
+
+✔ https://youtube.com/embed/xxxx
+
+<br>
+
+✔ iframe src
+
+<br>
+
+✔ Video ID
+
+</div>
+
+</div>
+
+<script>
+
+function extractVideoID(text){
+
+text=text.trim();
+
+if(text.includes('embed/')){
+
+return text.split('embed/')[1].split('?')[0];
+
+}
+
+if(text.includes('watch?v=')){
+
+return text.split('watch?v=')[1].split('&')[0];
+
+}
+
+if(text.includes('youtu.be/')){
+
+return text.split('youtu.be/')[1].split('?')[0];
+
+}
+
+if(text.includes('src="')){
+
+let s=text.match(/src="([^"]+)"/);
+
+if(s){
+
+return extractVideoID(s[1]);
+
+}
+
+}
+
+return text;
+
+}
+
+function runPlayer(){
+
+let input=document.getElementById("youtube").value;
+
+let id=extractVideoID(input);
+
+let url=
+`https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&controls=1&fs=1&iv_load_policy=3`;
+
+document.getElementById("frame").src=url;
+
+document.getElementById("player").style.display="block";
+
+document.getElementById("status").innerHTML=
+"✔ Player Created Successfully";
+
+}
+
+</script>
+
+</body>
+</html>
