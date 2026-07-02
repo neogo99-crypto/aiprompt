@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Link Transformer Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF0000;
+            --primary-hover: #CC0000;
+            --bg-main: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        header h1 span {
+            color: var(--primary);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            background-color: #FFF;
+            transition: var(--transition);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+        }
+
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            border: none;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-copy {
+            background-color: #F1F5F9;
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+        }
+
+        .btn-copy:hover {
+            background-color: #E2E8F0;
+        }
+
+        .btn-copy.copied {
+            background-color: #DCFCE7;
+            color: #15803D;
+            border-color: #BBF7D0;
+        }
+
+        .results-section {
+            display: none; /* ซ่อนไว้ก่อนกดประมวลผล */
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-header label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .output-wrapper {
+            position: relative;
+        }
+
+        .output-wrapper input {
+            width: 100%;
+            background-color: #F8FAFC;
+            color: #334155;
+            font-family: monospace;
+            font-size: 0.9rem;
+            padding-right: 5rem; /* เผื่อพื้นที่ให้ปุ่ม Copy ภายในช่องในอนาคต หรืออยู่นอกตามดีไซน์ */
+        }
+
+        .player-container {
+            margin-top: 2rem;
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+        }
+
+        .player-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .player-title::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #22C55E;
+            border-radius: 50%;
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* อัตราส่วน 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            background-color: #000;
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        @media (max-width: 640px) {
+            .input-wrapper {
+                flex-direction: column;
+            }
+            .btn-primary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>YouTube Link <span>Transformer</span></h1>
+            <p>แปลงลิงก์ YouTube ได้ทุกรูปแบบ เป็น Embed, PC Link และโค้ด iFrame สำเร็จรูป</p>
+        </header>
+
+        <!-- โซนรับค่า Input -->
+        <div class="card">
+            <div class="input-group">
+                <label for="youtubeInput">กรอกลิงก์แชร์, รหัสวิดีโอ (11 หลัก) หรือลิงก์เต็มสำหรับ PC</label>
+                <div class="input-wrapper">
+                    <input type="text" id="youtubeInput" placeholder="วางลิงก์ YouTube ที่นี่..." autocomplete="off">
+                    <button class="btn-primary" onclick="processVideo()">Process</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- โซนแสดงผลลัพธ์ -->
+        <div class="card results-section" id="resultsSection">
+            
+            <!-- 1. แบบ Embed URL -->
+            <div class="result-item">
+                <div class="result-header">
+                    <label>1. Embed URL (สำหรับนำไปฝากระบบ/แอปอื่น)</label>
+                    <button class="btn-copy" onclick="copyText('embedOutput', this)">คัดลอก</button>
+                </div>
+                <div class="output-wrapper">
+                    <input type="text" id="embedOutput" readonly>
+                </div>
+            </div>
+
+            <!-- 2. แบบ PC Web Browser -->
+            <div class="result-item">
+                <div class="result-header">
+                    <label>2. PC Browser URL (ลิงก์มาตรฐานสำหรับคอมพิวเตอร์)</label>
+                    <button class="btn-copy" onclick="copyText('pcOutput', this)">คัดลอก</button>
+                </div>
+                <div class="output-wrapper">
+                    <input type="text" id="pcOutput" readonly>
+                </div>
+            </div>
+
+            <!-- 3. โค้ด iFrame HTML -->
+            <div class="result-item">
+                <div class="result-header">
+                    <label>3. โค้ด HTML iFrame (สำหรับนำไปฝังในหน้าเว็บ)</label>
+                    <button class="btn-copy" onclick="copyText('iframeOutput', this)">คัดลอก</button>
+                </div>
+                <div class="output-wrapper">
+                    <input type="text" id="iframeOutput" readonly>
+                </div>
+            </div>
+
+            <!-- 4. ตัวเล่น Video Player ทดสอบ -->
+            <div class="player-container">
+                <div class="player-title">4. Live Video Player (แสดงผลทดสอบระบบ)</div>
+                <div class="video-wrapper" id="videoPlayerWrapper">
+                    <!-- iFrame จะถูกฉีดเข้ามาที่นี่ด้วย JavaScript -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function extractVideoId(input) {
+            input = input.trim();
+            
+            // กรณีที่ 1: ลิงก์ย่อ หรือ ลิงก์แชร์มือถือ (youtu.be/...)
+            if (input.includes('youtu.be/')) {
+                let parts = input.split('youtu.be/');
+                if (parts[1]) {
+                    return parts[1].split('?')[0].split('/')[0];
+                }
+            }
+            
+            // กรณีที่ 2: ลิงก์มาตรฐานบน PC (youtube.com/watch?v=...)
+            if (input.includes('youtube.com/watch')) {
+                try {
+                    let urlObj = new URL(input);
+                    let urlParams = new URLSearchParams(urlObj.search);
+                    if (urlParams.has('v')) {
+                        return urlParams.get('v');
+                    }
+                } catch (e) {
+                    // หากแปลง URL ล้มเหลว ให้เผื่อสเต็ป fallback ด้านล่าง
+                }
+            }
+            
+            // กรณีที่ 3: ลิงก์สไตล์ Embed (youtube.com/embed/...)
+            if (input.includes('youtube.com/embed/')) {
+                let parts = input.split('youtube.com/embed/');
+                if (parts[1]) {
+                    return parts[1].split('?')[0];
+                }
+            }
+
+            // กรณีที่ 4: ใส่เฉพาะ Video ID ความยาวปกติคือ 11 หลัก 
+            // (หรือกรณีที่ผู้ใช้เผลอก๊อปปี้ Token ?si=... ติดมาด้วย)
+            let cleanInput = input.split('?')[0];
+            if (cleanInput.length === 11) {
+                return cleanInput;
+            }
+
+            // ดึงกลุ่มอักษร 11 หลักที่คาดว่าเป็นไอดีออกมา หากใส่ข้อความแปลกๆ มา
+            let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            let match = input.match(regExp);
+            if (match && match[2].length === 11) {
+                return match[2];
+            }
+
+            return null;
+        }
+
+        function processVideo() {
+            const inputVal = document.getElementById('youtubeInput').value;
+            const videoId = extractVideoId(inputVal);
+
+            if (!videoId) {
+                alert('ไม่พบรหัสวิดีโอ YouTube ที่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอกอีกครั้งครับ');
+                return;
+            }
+
+            // 1. สร้างโครงสร้าง URL แต่ละแบบ
+            const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+            const pcUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            const iframeCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+
+            // 2. ส่งค่าไปแสดงผลบน Textbox
+            document.getElementById('embedOutput').value = embedUrl;
+            document.getElementById('pcOutput').value = pcUrl;
+            document.getElementById('iframeOutput').value = iframeCode;
+
+            // 3. ฉีดโค้ดสร้าง Video Player สำหรับทดสอบจริง
+            document.getElementById('videoPlayerWrapper').innerHTML = iframeCode;
+
+            // 4. เปิดการแสดงผลการ์ดผลลัพธ์
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function copyText(elementId, btn) {
+            const copyText = document.getElementById(elementId);
+            
+            // ใช้เครื่องมือของเบราว์เซอร์ในการคัดลอกข้อความ
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); // รองรับบนสมาร์ทโฟนด้วย
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                // อัปเดตสถานะปุ่มชั่วคราวเพื่อให้ผู้ใช้รู้ว่าคัดลอกแล้ว
+                const originalText = btn.innerText;
+                btn.innerText = 'คัดลอกแล้ว!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('ไม่สามารถคัดลอกข้อความได้: ', err);
+            });
+        }
+    </script>
+
+</body>
+</html>
