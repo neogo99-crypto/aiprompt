@@ -11,6 +11,8 @@
         :root {
             --primary: #FF0000;
             --primary-hover: #CC0000;
+            --secondary: #0284C7;
+            --secondary-hover: #0369A1;
             --bg-main: #F8FAFC;
             --bg-card: #FFFFFF;
             --text-main: #0F172A;
@@ -110,6 +112,7 @@
             font-weight: 600;
             border: none;
             transition: var(--transition);
+            white-space: nowrap;
         }
 
         .btn-primary {
@@ -122,6 +125,21 @@
 
         .btn-primary:hover {
             background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: #FFFFFF;
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--secondary-hover);
         }
 
         .btn-copy {
@@ -144,7 +162,7 @@
         }
 
         .results-section {
-            display: none; /* ซ่อนไว้ก่อนกดประมวลผล */
+            display: none;
             animation: fadeIn 0.3s ease-in-out;
         }
 
@@ -184,7 +202,7 @@
             color: #334155;
             font-family: monospace;
             font-size: 0.9rem;
-            padding-right: 5rem; /* เผื่อพื้นที่ให้ปุ่ม Copy ภายในช่องในอนาคต หรืออยู่นอกตามดีไซน์ */
+            padding-right: 5rem;
         }
 
         .player-container {
@@ -213,7 +231,7 @@
 
         .video-wrapper {
             position: relative;
-            padding-bottom: 56.25%; /* อัตราส่วน 16:9 */
+            padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
             border-radius: 8px;
@@ -234,8 +252,9 @@
             .input-wrapper {
                 flex-direction: column;
             }
-            .btn-primary {
+            button {
                 width: 100%;
+                justify-content: center;
             }
         }
     </style>
@@ -255,9 +274,8 @@
                 <div class="input-wrapper">
                     <input type="text" id="youtubeInput" placeholder="วางลิงก์ YouTube ที่นี่..." autocomplete="off">
                     <button class="btn-primary" onclick="processVideo()">Process</button>
-                    
+                    <!-- ปุ่มที่เพิ่มเข้ามาใหม่สำหรับเปิดหน้าเว็บภายนอกบนแท็บใหม่ -->
                     <button class="btn-secondary" onclick="window.open('https://neogo99-crypto.github.io/linemsg/', '_blank')">Line MSG 🔗</button>
-                    
                 </div>
             </div>
         </div>
@@ -313,7 +331,6 @@
         function extractVideoId(input) {
             input = input.trim();
             
-            // กรณีที่ 1: ลิงก์ย่อ หรือ ลิงก์แชร์มือถือ (youtu.be/...)
             if (input.includes('youtu.be/')) {
                 let parts = input.split('youtu.be/');
                 if (parts[1]) {
@@ -321,7 +338,6 @@
                 }
             }
             
-            // กรณีที่ 2: ลิงก์มาตรฐานบน PC (youtube.com/watch?v=...)
             if (input.includes('youtube.com/watch')) {
                 try {
                     let urlObj = new URL(input);
@@ -329,12 +345,9 @@
                     if (urlParams.has('v')) {
                         return urlParams.get('v');
                     }
-                } catch (e) {
-                    // หากแปลง URL ล้มเหลว ให้เผื่อสเต็ป fallback ด้านล่าง
-                }
+                } catch (e) {}
             }
             
-            // กรณีที่ 3: ลิงก์สไตล์ Embed (youtube.com/embed/...)
             if (input.includes('youtube.com/embed/')) {
                 let parts = input.split('youtube.com/embed/');
                 if (parts[1]) {
@@ -342,14 +355,11 @@
                 }
             }
 
-            // กรณีที่ 4: ใส่เฉพาะ Video ID ความยาวปกติคือ 11 หลัก 
-            // (หรือกรณีที่ผู้ใช้เผลอก๊อปปี้ Token ?si=... ติดมาด้วย)
             let cleanInput = input.split('?')[0];
             if (cleanInput.length === 11) {
                 return cleanInput;
             }
 
-            // ดึงกลุ่มอักษร 11 หลักที่คาดว่าเป็นไอดีออกมา หากใส่ข้อความแปลกๆ มา
             let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             let match = input.match(regExp);
             if (match && match[2].length === 11) {
@@ -368,31 +378,24 @@
                 return;
             }
 
-            // 1. สร้างโครงสร้าง URL แต่ละแบบ
             const embedUrl = `https://www.youtube.com/embed/${videoId}`;
             const pcUrl = `https://www.yout-ube.com/watch?v=${videoId}`;
             const iframeCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
 
-            // 2. ส่งค่าไปแสดงผลบน Textbox
             document.getElementById('embedOutput').value = embedUrl;
             document.getElementById('pcOutput').value = pcUrl;
             document.getElementById('iframeOutput').value = iframeCode;
 
-            // 3. ฉีดโค้ดสร้าง Video Player สำหรับทดสอบจริง
             document.getElementById('videoPlayerWrapper').innerHTML = iframeCode;
-
-            // 4. เปิดการแสดงผลการ์ดผลลัพธ์
             document.getElementById('resultsSection').style.display = 'block';
         }
 
         function copyText(elementId, btn) {
             const copyText = document.getElementById(elementId);
             
-            // ใช้เครื่องมือของเบราว์เซอร์ในการคัดลอกข้อความ
             copyText.select();
-            copyText.setSelectionRange(0, 99999); // รองรับบนสมาร์ทโฟนด้วย
+            copyText.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(copyText.value).then(() => {
-                // อัปเดตสถานะปุ่มชั่วคราวเพื่อให้ผู้ใช้รู้ว่าคัดลอกแล้ว
                 const originalText = btn.innerText;
                 btn.innerText = 'คัดลอกแล้ว!';
                 btn.classList.add('copied');
