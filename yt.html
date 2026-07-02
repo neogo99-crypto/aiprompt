@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional YouTube Ad-Minimized Player</title>
+    <title>Professional YouTube URL & iFrame Player</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -46,7 +46,7 @@
         
         textarea {
             width: 100%;
-            height: 120px;
+            height: 100px;
             padding: 15px;
             border: 2px solid var(--border-color);
             border-radius: 8px;
@@ -128,39 +128,59 @@
     <div class="container">
         <header>
             <h1>YouTube Clean Video Player</h1>
-            <p>แปลงโค้ดฝังเพื่อลดโฆษณา คั่นเนื้อหา และเพิ่มความเป็นส่วนตัวสูงสุด</p>
+            <p>วางเฉพาะลิงก์บรรทัด src หรือโค้ด iframe เต็มรูปแบบเพื่อเปิดวิดีโอโหมดลดโฆษณา</p>
         </header>
 
         <main>
             <div class="main-card">
                 <div class="form-group">
-                    <label for="iframeInput">โค้ด iframe ดั้งเดิมจาก YouTube</label>
-                    <textarea id="iframeInput" placeholder='วางโค้ด <iframe ...> ที่คัดลอกมาจาก YouTube ที่นี่'></textarea>
-                    <div id="errorMessage" class="error-message">โปรดระบุโค้ด iframe ที่ถูกต้อง</div>
+                    <label for="videoInput">ลิงก์วิดีโอ (เฉพาะส่วน src) หรือ โค้ด iframe</label>
+                    <textarea id="videoInput" placeholder='ตัวอย่าง: https://www.youtube.com/embed/nm3jDf4ofTo?si=y5aitIfXlzkssAao'></textarea>
+                    <div id="errorMessage" class="error-message">โปรดระบุที่อยู่ลิงก์หรือโค้ดวิดีโอที่ถูกต้อง</div>
                 </div>
-                <button type="button" class="btn-submit" onclick="renderCleanVideo()">เปิดเครื่องเล่นแบบคลีน (Run Clean Player)</button>
+                <button type="button" class="btn-submit" onclick="processAndRender()">เปิดเครื่องเล่นวิดีโอ (Run Player)</button>
             </div>
 
             <div id="playerWrapper" class="player-wrapper">
-                <div class="player-title">
-                    กำลังเล่นในโหมดเพิ่มความเป็นส่วนตัว (No-Cookie Mode)
-                </div>
+                <div class="player-title">กำลังเล่นในโหมดเพิ่มความเป็นส่วนตัว (No-Cookie Mode)</div>
                 <div id="videoContainer" class="video-container"></div>
-                <div class="info-tag">🛡️ ระบบทำการกรอง URL และฝังพารามิเตอร์ป้องกันโฆษณาเบื้องต้นให้แล้ว</div>
+                <div class="info-tag">🛡️ ปรับเปลี่ยนลิงก์เป็นรูปแบบไร้คุ้กกี้โฆษณาและปิดสิ่งกวนใจให้เรียบร้อยแล้ว</div>
             </div>
         </main>
     </div>
 
     <script>
-        function renderCleanVideo() {
-            const inputArea = document.getElementById('iframeInput');
+        function processAndRender() {
+            const inputArea = document.getElementById('videoInput');
             const errorMsg = document.getElementById('errorMessage');
             const playerWrapper = document.getElementById('playerWrapper');
             const videoContainer = document.getElementById('videoContainer');
             
-            let rawCode = inputArea.value.trim();
+            let inputValue = inputArea.value.trim();
+            let finalSrc = "";
 
-            if (rawCode === "" || !rawCode.includes('<iframe') || !rawCode.includes('src')) {
+            if (inputValue === "") {
+                errorMsg.style.display = 'block';
+                playerWrapper.style.display = 'none';
+                return;
+            }
+
+            // เคสที่ 1: ผู้ใช้วางมาเป็นโค้ด iframe เต็มๆ (เช่น <iframe src="..." ...>)
+            if (inputValue.includes('<iframe')) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(inputValue, 'text/html');
+                const iframe = doc.querySelector('iframe');
+                if (iframe && iframe.getAttribute('src')) {
+                    finalSrc = iframe.getAttribute('src');
+                }
+            } else {
+                // เคสที่ 2: ผู้ใช้วางเฉพาะตัวลิงก์ (ทั้งแบบมีหรือไม่มีเครื่องหมายคำพูดครอบ)
+                // ตัดเครื่องหมายคำพูดออกในกรณีที่ติดมา เช่น src="http..." หรือ "http..."
+                finalSrc = inputValue.replace(/^(src=)?['"‘“]|['"’”]$/g, '').trim();
+            }
+
+            // ตรวจสอบความถูกต้องเบื้องต้นของ URL ลิงก์ YouTube
+            if (finalSrc === "" || (!finalSrc.includes('youtube') && !finalSrc.includes('youtu.be'))) {
                 errorMsg.style.display = 'block';
                 playerWrapper.style.display = 'none';
                 return;
@@ -169,37 +189,30 @@
             errorMsg.style.display = 'none';
 
             try {
-                // สร้างธาตุเสมือนขึ้นมาดึงค่า src เพื่อแปลง url
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(rawCode, 'text/html');
-                const iframe = doc.querySelector('iframe');
+                // 1. แปลง Domain เพื่อหลีกเลี่ยงการจำประวัติและคุ้กกี้ที่ส่งผลต่อโฆษณา
+                finalSrc = finalSrc.replace('youtube.com', 'youtube-nocookie.com');
+                finalSrc = finalSrc.replace('youtu.be', 'youtube-nocookie.com');
                 
-                if (iframe) {
-                    let src = iframe.getAttribute('src');
-                    
-                    // 1. เปลี่ยนโดเมนเพื่อเลี่ยงคุ้กกี้โฆษณาพฤติกรรม
-                    src = src.replace('youtube.com', 'youtube-nocookie.com');
-                    src = src.replace('youtu.be', 'youtube-nocookie.com');
-                    
-                    // 2. เติมพารามิเตอร์ลดการโฆษณาและปิดสิ่งกวนใจ
-                    const urlObj = new URL(src);
-                    urlObj.searchParams.set('rel', '0');             // โชว์เฉพาะวิดีโอที่เกี่ยวข้องในช่องตัวเองตอนจบ
-                    urlObj.searchParams.set('iv_load_policy', '3');  // ปิด Annotations กวนใจบนจอ
-                    urlObj.searchParams.set('modestbranding', '1');  // ลดการแสดงโลโก้ YouTube ขนาดใหญ่
-                    
-                    // ตั้งค่าคุณสมบัติความปลอดภัยเพิ่มเติมให้กับ iframe
-                    iframe.setAttribute('src', urlObj.toString());
-                    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
-                    
-                    // แสดงผล
-                    videoContainer.innerHTML = iframe.outerHTML;
-                    playerWrapper.style.display = 'block';
-                    playerWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                } else {
-                    throw new Error("Invalid iframe structures");
-                }
+                // 2. เติม Parameter เพื่อบล็อกและจำกัดสิ่งกวนใจ
+                const urlObj = new URL(finalSrc);
+                urlObj.searchParams.set('rel', '0');             // แสดงแค่วิดีโอจากช่องเดียวกันตอนเล่นจบ
+                urlObj.searchParams.set('iv_load_policy', '3');  // ปิด Annotations/แถบอักษรโปรโมตบนจอ
+                urlObj.searchParams.set('modestbranding', '1');  // ลดโลโก้ YouTube ตัวใหญ่
+
+                // 3. สร้างแท็ก iframe ขึ้นมาใหม่ด้วยโครงสร้างที่ปลอดภัยและสมบูรณ์
+                const cleanIframe = document.createElement('iframe');
+                cleanIframe.setAttribute('src', urlObj.toString());
+                cleanIframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                cleanIframe.setAttribute('allowfullscreen', 'true');
+
+                // ทำการแสดงผลบนหน้าเว็บ
+                videoContainer.innerHTML = '';
+                videoContainer.appendChild(cleanIframe);
+                playerWrapper.style.display = 'block';
+                playerWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
             } catch (e) {
-                errorMsg.innerText = "เกิดข้อผิดพลาดในการประมวลผลโค้ด iframe";
+                errorMsg.innerText = "ลิงก์ URL ไม่ถูกต้องตามรูปแบบมาตรฐาน";
                 errorMsg.style.display = 'block';
                 playerWrapper.style.display = 'none';
             }
