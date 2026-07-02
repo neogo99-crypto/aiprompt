@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional YouTube iFrame Player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #ff0000;
+            --primary-hover: #cc0000;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #212529;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --radius: 12px;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .main-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(0,0,0,0.03);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+            background-color: #fbfbfb;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--text-main);
+            background-color: #fff;
+        }
+
+        .btn-submit {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        /* ส่วนแสดงผลเครื่องเล่นวิดีโอ */
+        .player-wrapper {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            display: none; /* ซ่อนไว้ก่อนจนกว่าจะกด Run */
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .player-title {
+            font-weight: 500;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .player-title::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #28a745;
+            border-radius: 50%;
+        }
+
+        /* เทคนิคทำให้วิดีโอรักษาสัดส่วน 16:9 และยืดหยุ่นตามหน้าจอ */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* อัตราส่วน 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 6px;
+            background-color: #000;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .error-message {
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+            .main-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>YouTube iFrame Video Player</h1>
+            <p>วางโค้ดฝัง (Embed Code) จาก YouTube เพื่อสร้างเครื่องเล่นวิดีโอแบบทันใจ</p>
+        </header>
+
+        <main>
+            <div class="main-card">
+                <div class="form-group">
+                    <label for="iframeInput">โค้ด iframe จาก YouTube</label>
+                    <textarea id="iframeInput" placeholder='ตัวอย่าง: <iframe width="560" height="315" src="https://www.youtube.com/embed/..." ...></iframe>'></textarea>
+                    <div id="errorMessage" class="error-message">โปรดกรอกโค้ด iframe ที่ถูกต้องจาก YouTube</div>
+                </div>
+                <button type="button" class="btn-submit" onclick="renderVideo()">เล่นวิดีโอ (Run Player)</button>
+            </div>
+
+            <div id="playerWrapper" class="player-wrapper">
+                <div class="player-title">กำลังเล่นวิดีโอของคุณ</div>
+                <div id="videoContainer" class="video-container">
+                    </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function renderVideo() {
+            const inputArea = document.getElementById('iframeInput');
+            const errorMsg = document.getElementById('errorMessage');
+            const playerWrapper = document.getElementById('playerWrapper');
+            const videoContainer = document.getElementById('videoContainer');
+            
+            const rawCode = inputArea.value.trim();
+
+            // ตรวจสอบเบื้องต้นว่ามีการใส่โค้ด iframe หรือไม่
+            if (rawCode === "" || !rawCode.includes('<iframe') || !rawCode.includes('src')) {
+                errorMsg.style.display = 'block';
+                inputArea.style.borderColor = 'var(--primary-color)';
+                playerWrapper.style.display = 'none';
+                return;
+            }
+
+            // หากโค้ดถูกต้อง ให้ล้างข้อความแจ้งเตือนสีแดงออก
+            errorMsg.style.display = 'none';
+            inputArea.style.borderColor = 'var(--border-color)';
+
+            // นำโค้ดไปใส่ใน container และสั่งเปิดการแสดงผลของกล่องวิดีโอ
+            videoContainer.innerHTML = rawCode;
+            playerWrapper.style.display = 'block';
+
+            // เลื่อนหน้าจอลงมาโฟกัสที่วิดีโอโดยอัตโนมัติเพื่อให้ใช้งานง่ายขึ้น
+            playerWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>
