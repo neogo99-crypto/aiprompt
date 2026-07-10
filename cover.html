@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Thumbnail & Link Extractor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+        <div class="bg-gradient-to-r flex items-center gap-4 from-blue-600 to-sky-500 p-6 text-white">
+            <div class="bg-white/20 p-3 rounded-lg text-2xl">
+                <i class="fa-brands fa-youtube text-red-500 bg-white rounded px-1 pt-0.5"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide">YouTube Tools</h1>
+                <p class="text-sm text-blue-100/80">แปลงลิงก์ ดึงภาพหน้าปก HD / SD และแปลงฟอร์แมต PC</p>
+            </div>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-link text-blue-500"></i> วางลิงก์วิดีโอ YouTube ที่นี่
+                </label>
+                <input type="text" id="youtubeUrl" 
+                       placeholder="วางลิงก์ได้ทุกรูปแบบ เช่น https://youtu.be/..., https://youtube.com/shorts/..." 
+                       class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                       onclick="this.select()">
+            </div>
+
+            <div id="previewContainer" class="hidden space-y-2">
+                <span class="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <i class="fa-regular fa-image text-blue-500"></i> ตัวอย่างภาพหน้าปก (HD)
+                </span>
+                <div class="border border-slate-100 rounded-xl overflow-hidden bg-slate-100 aspect-video flex items-center justify-center">
+                    <img id="thumbPreview" src="" alt="Thumbnail Preview" class="w-full h-full object-cover">
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ภาพหน้าปกความละเอียดสูง (HD - Max Resolution)
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="hdOutput" readonly class="w-full px-3 py-2 bg-slate-50 text-slate-600 text-sm border border-slate-200 rounded-lg focus:outline-none" onclick="this.select()">
+                        <button onclick="copyToClipboard('hdOutput', this)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-regular fa-copy"></i> คัดลอก
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> ภาพหน้าปกความละเอียดมาตรฐาน (SD Standard)
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="sdOutput" readonly class="w-full px-3 py-2 bg-slate-50 text-slate-600 text-sm border border-slate-200 rounded-lg focus:outline-none" onclick="this.select()">
+                        <button onclick="copyToClipboard('sdOutput', this)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-regular fa-copy"></i> คัดลอก
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 pt-2 border-t border-slate-100">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-desktop text-sky-500 text-xs"></i> ลิงก์รูปแบบสำหรับใช้งานบน PC
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="pcOutput" readonly class="w-full px-3 py-2 bg-slate-50 text-slate-600 text-sm border border-slate-200 rounded-lg focus:outline-none" onclick="this.select()">
+                        <button onclick="copyToClipboard('pcOutput', this)" class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-regular fa-copy"></i> คัดลอก
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const youtubeUrlInput = document.getElementById('youtubeUrl');
+        const hdOutput = document.getElementById('hdOutput');
+        const sdOutput = document.getElementById('sdOutput');
+        const pcOutput = document.getElementById('pcOutput');
+        const previewContainer = document.getElementById('previewContainer');
+        const thumbPreview = document.getElementById('thumbPreview');
+
+        // ตรวจจับการเปลี่ยนแปลงในช่องกรอกลิงก์
+        youtubeUrlInput.addEventListener('input', () => {
+            const url = youtubeUrlInput.value.trim();
+            const videoId = extractVideoId(url);
+
+            if (videoId) {
+                // สร้างลิงก์รูปภาพ
+                const hdUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                const sdUrl = `https://img.youtube.com/vi/${videoId}/sddefault.jpg`;
+                const pcUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+                // อัปเดตข้อมูลลงใน Textbox
+                hdOutput.value = hdUrl;
+                sdOutput.value = sdUrl;
+                pcOutput.value = pcUrl;
+
+                // แสดงรูปตัวอย่าง
+                thumbPreview.src = hdUrl;
+                previewContainer.classList.remove('hidden');
+            } else {
+                // ล้างค่าหากลิงก์ไม่ถูกต้อง
+                hdOutput.value = '';
+                sdOutput.value = '';
+                pcOutput.value = '';
+                previewContainer.classList.add('hidden');
+                thumbPreview.src = '';
+            }
+        });
+
+        // ฟังก์ชันถอดรหัส Video ID จากลิงก์รูปแบบต่างๆ
+        function extractVideoId(url) {
+            if (!url) return null;
+            
+            // Regex ครอบคลุม watch?v=, youtu.be/, embed/, shorts/, และรูปแบบพารามิเตอร์อื่นๆ
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        // ฟังก์ชันสำหรับปุ่มคัดลอก
+        function copyToClipboard(inputId, button) {
+            const input = document.getElementById(inputId);
+            if (!input.value) return;
+
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                // เปลี่ยนสถานะปุ่มชั่วคราวเพื่อบอกผู้ใช้ว่าคัดลอกแล้ว
+                const originalText = button.innerHTML;
+                button.innerHTML = `<i class="fa-solid fa-check"></i> สำเร็จ!`;
+                button.classList.replace('bg-blue-600', 'bg-emerald-600');
+                button.classList.replace('bg-sky-500', 'bg-emerald-600');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.replace('bg-emerald-600', inputId === 'pcOutput' ? 'bg-sky-500' : 'bg-blue-600');
+                }, 2000);
+            }).catch(err => {
+                console.error('ไม่สามารถคัดลอกได้: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
