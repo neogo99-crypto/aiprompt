@@ -3,188 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Battery Pack Simulator Pro</title>
+    <title>Lithium-ion Battery Pack Simulator</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body {
-            font-family: 'Inter', 'Noto Sans Thai', sans-serif;
-        }
-        /* Custom scrollbar for control panel */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1f2937;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 3px;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        select, input[type="range"] { cursor: pointer; }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 h-screen overflow-hidden flex flex-col md:flex-row">
+<body class="h-screen overflow-hidden flex flex-col md:flex-row">
 
-    <div class="w-full md:w-96 bg-gray-900 border-b md:border-b-0 md:border-r border-gray-800 flex flex-col h-2/5 md:h-full z-10 shadow-2xl">
-        <div class="p-6 border-b border-gray-800 flex items-center gap-3 bg-gray-900/50 sticky top-0 backdrop-blur-md">
-            <div class="p-2 bg-amber-500/10 text-amber-500 rounded-lg">
-                <i data-lucide="battery-charging" class="w-6 h-6"></i>
+    <div class="w-full md:w-80 bg-white border-r border-gray-200 flex flex-col h-2/5 md:h-full z-10 shadow-md">
+        <div class="p-4 border-b border-gray-200 flex items-center gap-2">
+            <div class="text-blue-600 text-xl font-bold">
+                <svg class="w-6 h-6 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
             </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-wide text-white">Battery Pack 3D</h1>
-                <p class="text-xs text-gray-400">Simulation & Configuration Tool</p>
-            </div>
+            <h1 class="text-md font-semibold text-gray-750">Lithium-ion Battery Pack</h1>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-            <div class="space-y-4">
-                <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="cpu" class="w-4 h-4"></i> ข้อมูลเซลล์แบตเตอรี่
-                </h2>
-                
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1.5">รูปทรงของเซลล์ (Cell Shape)</label>
-                    <select id="cellShape" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
-                        <option value="cylindrical">ทรงกลม (Cylindrical เช่น 18650/32700)</option>
-                        <option value="prismatic">สี่เหลี่ยมผืนผ้า (Prismatic)</option>
-                    </select>
-                </div>
+        <div class="flex border-b border-gray-200 text-sm">
+            <button class="w-1/2 py-2.5 text-center font-medium text-blue-600 border-b-2 border-blue-600 bg-blue-50/30">Control</button>
+            <button class="w-1/2 py-2.5 text-center font-medium text-gray-500 hover:text-gray-700">Enables</button>
+        </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1.5">ชนิดเคมี (Chemistry)</label>
-                        <select id="cellChemistry" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
-                            <option value="nmc">NMC (3.7V)</option>
-                            <option value="lfp">LFP (3.2V)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1.5">ความจุ/เซลล์ (Ah)</label>
-                        <input id="cellCapacity" type="number" value="5" step="0.1" min="0.1" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
-                    </div>
-                </div>
+        <div class="flex-1 p-5 space-y-5 overflow-y-auto">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Cell Shape</label>
+                <select id="cellShape" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+                    <option value="cylindrical">Cylindrical</option>
+                    <option value="prismatic">Prismatic Block</option>
+                </select>
             </div>
 
-            <hr class="border-gray-800">
-
-            <div class="space-y-4">
-                <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="layers" class="w-4 h-4"></i> การจัดเรียงชุดแพ็ค (Configuration)
-                </h2>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1.5">อนุกรม (Series - S)</label>
-                        <input id="seriesCount" type="number" value="4" min="1" max="24" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1.5">ขนาน (Parallel - P)</label>
-                        <input id="parallelCount" type="number" value="2" min="1" max="10" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
-                    </div>
-                </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Battery Chemistry</label>
+                <select id="cellChemistry" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+                    <option value="nmc">NMC (3.7V / Cell)</option>
+                    <option value="lfp">LFP (3.2V / Cell)</option>
+                </select>
             </div>
 
-            <hr class="border-gray-800">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Cell Capacity (Ah)</label>
+                <input id="cellCapacity" type="number" value="5.0" step="0.5" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:border-blue-500">
+            </div>
 
-            <div class="space-y-4">
-                <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="sliders" class="w-4 h-4"></i> ตัวเลือกเพิ่มเติม
-                </h2>
-                <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl border border-gray-800">
-                    <div class="flex items-center gap-2.5">
-                        <i data-lucide="shield-check" class="w-5 h-5 text-emerald-500"></i>
-                        <div>
-                            <p class="text-sm font-medium text-white">ติดตั้งระบบ BMS</p>
-                            <p class="text-xs text-gray-400">แสดงการเชื่อมต่อสาย Balance</p>
-                        </div>
-                    </div>
+            <div>
+                <div class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                    <span>Series (S)</span>
+                    <span id="sValDisplay" class="font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-xs">4</span>
+                </div>
+                <input id="seriesCount" type="range" min="1" max="16" value="4" class="w-full accent-blue-600">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                    <span>Parallel (P)</span>
+                    <span id="pValDisplay" class="font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-xs">2</span>
+                </div>
+                <input id="parallelCount" type="range" min="1" max="10" value="2" class="w-full accent-blue-600">
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <span class="text-sm font-medium text-gray-700">BMS System</span>
+                <div class="flex items-center gap-2">
+                    <span id="bmsStatusText" class="text-xs text-gray-500">On</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input id="toggleBMS" type="checkbox" checked class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
                     </label>
                 </div>
             </div>
-
-            <button id="btnRender" class="w-full bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold py-3 px-4 rounded-xl shadow-lg shadow-amber-500/10 transition flex items-center justify-center gap-2 cursor-pointer group">
-                <i data-lucide="refresh-cw" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"></i>
-                ประมวลผลและสร้างโมเดล 3D
-            </button>
         </div>
 
-        <div class="p-6 bg-gray-950/60 border-t border-gray-800 space-y-3">
-            <div class="flex justify-between items-center text-xs text-gray-400 font-medium">
-                <span>สรุปผลการคำนวณทางไฟฟ้า</span>
-                <span id="packConfigLabel" class="text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded">4S2P</span>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-gray-800/50 border border-gray-800 p-3 rounded-xl">
-                    <p class="text-xs text-gray-400 mb-0.5">แรงดันไฟฟ้ารวม</p>
-                    <p id="totalVoltage" class="text-xl font-bold text-white">12.8 <span class="text-xs font-normal text-gray-400">V</span></p>
+        <div class="p-5 border-t border-gray-200 bg-gray-50/80">
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Calculated Output:</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <span class="text-xs text-gray-400 block">Output Voltage</span>
+                    <span id="totalVoltage" class="text-xl font-bold text-gray-800">14.8V</span>
                 </div>
-                <div class="bg-gray-800/50 border border-gray-800 p-3 rounded-xl">
-                    <p class="text-xs text-gray-400 mb-0.5">ความจุรวม</p>
-                    <p id="totalCapacity" class="text-xl font-bold text-white">10.0 <span class="text-xs font-normal text-gray-400">Ah</span></p>
+                <div>
+                    <span class="text-xs text-gray-400 block">Output Capacity</span>
+                    <span id="totalCapacity" class="text-xl font-bold text-gray-800">10.0Ah</span>
                 </div>
-            </div>
-            <div class="bg-gray-800/30 border border-gray-800/80 px-3 py-2 rounded-lg text-center">
-                <p class="text-xs text-gray-400">พลังงานทั้งหมด: <span id="totalEnergy" class="font-semibold text-amber-400">128</span> Wh | จำนวนเซลล์: <span id="totalCellsCount" class="font-semibold text-amber-400">8</span> เซลล์</p>
             </div>
         </div>
     </div>
 
-    <div class="flex-1 relative h-3/5 md:h-full bg-radial from-gray-900 to-gray-950">
+    <div class="flex-1 relative h-3/5 md:h-full bg-white">
         <div id="canvasContainer" class="w-full h-full"></div>
 
-        <div class="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pointer-events-none">
-            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-xl pointer-events-auto text-gray-300">
-                <i data-lucide="move" class="w-4 h-4 text-amber-500 animate-pulse"></i>
-                <span>คลิกเมาส์ซ้ายเพื่อ<b>หมุน</b> | เมาส์ขวาเพื่อ<b>ย้ายตำแหน่ง</b> | สกรอลเพื่อ<b>ซูม</b></span>
-            </div>
-
-            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-800 p-3 rounded-xl shadow-xl pointer-events-auto flex gap-4 text-xs">
-                <div class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
-                    <span class="text-gray-300">ขั้วบวก (+)</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 rounded-full bg-zinc-700 inline-block"></span>
-                    <span class="text-gray-300">ขั้วลบ (-)</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 rounded bg-amber-400 inline-block"></span>
-                    <span class="text-gray-300">บัสบาร์ทองแดง</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 rounded bg-blue-500 inline-block"></span>
-                    <span class="text-gray-300">สาย BMS</span>
-                </div>
-            </div>
+        <div class="absolute top-4 right-4 bg-white/80 border border-gray-200 shadow-sm p-2 rounded text-[11px] text-gray-500 pointer-events-none">
+            <p>🖱️ คลิกซ้ายค้าง = หมุนมองรอบทิศทาง</p>
+            <p>🖱️ คลิกขวาค้าง = ย้ายจุดศูนย์กลางกล้อง</p>
         </div>
     </div>
 
     <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
-
-        // Global Variables for Three.js Scene
         let scene, camera, renderer, controls;
-        let batteryGroup = new THREE.Group();
-
+        let mainBatteryGroup = new THREE.Group();
         const container = document.getElementById('canvasContainer');
 
-        // Setup 3D Environment
+        // ฟังก์ชันสร้างฉาก 3 มิติเริ่มต้น
         function init3D() {
             scene = new THREE.Scene();
-            scene.background = null; // Let CSS handle gradient background
+            scene.background = new THREE.Color(0xf8fafc); // พื้นหลังขาวนวลคล้ายในภาพตัวอย่าง
 
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(8, 8, 12);
+            camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(12, 10, 15); // ตั้งมุมมองเฉียงสูงลงมาให้เห็นชัดเจน
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
@@ -194,38 +127,37 @@
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI / 1.8; // Prevent looking completely underneath floor
 
-            // Lighting Setup
+            // จัดการระบบแสงสว่างสตูดิโอให้เห็นสีสันวัตถุที่สมจริง
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
 
-            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight1.position.set(10, 20, 15);
-            dirLight1.castShadow = true;
-            dirLight1.shadow.mapSize.width = 2048;
-            dirLight1.shadow.mapSize.height = 2048;
-            scene.add(dirLight1);
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            mainLight.position.set(10, 18, 12);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            scene.add(mainLight);
 
-            const dirLight2 = new THREE.DirectionalLight(0x90b0ff, 0.3);
-            dirLight2.position.set(-10, -10, -10);
-            scene.add(dirLight2);
-
-            // Studio Floor Shadow Receiver
-            const floorGeo = new THREE.PlaneGeometry(50, 50);
-            const floorMat = new THREE.ShadowMaterial({ opacity: 0.2 });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.y = -1.5;
-            floor.receiveShadow = true;
-            scene.add(floor);
-
-            // Studio Grid helper for professional look
-            const gridHelper = new THREE.GridHelper(30, 30, 0x374151, 0x1f2937);
-            gridHelper.position.y = -1.49;
+            // ใส่แผ่นตาราง Grid บางๆ เพื่อความสวยงามแบบในโปรแกรม CAD
+            const gridHelper = new THREE.GridHelper(30, 30, 0xe2e8f0, 0xf1f5f9);
+            gridHelper.position.y = -2.0;
             scene.add(gridHelper);
 
-            scene.add(batteryGroup);
+            // สร้างครอบโปร่งแสงใส (Acrylic Box) ล้อมรอบตัวแพ็ค เพื่อเพิ่มความลึกมิติและดูเป็นมืออาชีพ
+            const boxFrameGeo = new THREE.BoxGeometry(7, 3.5, 5);
+            const boxFrameMat = new THREE.MeshStandardMaterial({ 
+                color: 0xcccccc, 
+                transparent: true, 
+                opacity: 0.08, 
+                wireframe: false,
+                roughness: 0.1
+            });
+            const outerBox = new THREE.Mesh(boxFrameGeo, boxFrameMat);
+            outerBox.position.set(0, 0, 0);
+            scene.add(outerBox);
+
+            scene.add(mainBatteryGroup);
 
             window.addEventListener('resize', onWindowResize);
             animate();
@@ -243,240 +175,238 @@
             renderer.render(scene, camera);
         }
 
-        // Calculation and Render Orchestration
-        function updateSimulation() {
-            // 1. Inputs Parsing
+        // ฟังก์ชันหัวใจหลักในการคำนวณวงจรไฟฟ้าและถักทอบัสบาร์/สาย BMS ลงโมเดลตามตำแหน่งที่เปลี่ยนไป
+        function rebuildBatteryPack() {
+            // ดึงค่า Input ล่าสุดจาก UI ฝั่งซ้าย
             const shape = document.getElementById('cellShape').value;
             const chemistry = document.getElementById('cellChemistry').value;
-            const capacityStr = document.getElementById('cellCapacity').value;
+            const cellCap = parseFloat(document.getElementById('cellCapacity').value) || 5.0;
             const sCount = parseInt(document.getElementById('seriesCount').value) || 1;
             const pCount = parseInt(document.getElementById('parallelCount').value) || 1;
             const showBMS = document.getElementById('toggleBMS').checked;
 
-            const nominalVoltage = chemistry === 'nmc' ? 3.7 : 3.2;
-            const cellCapacity = parseFloat(capacityStr) || 5.0;
+            // ปรับตัวเลขแสดงผลบนสไลเดอร์
+            document.getElementById('sValDisplay').innerText = sCount;
+            document.getElementById('pValDisplay').innerText = pCount;
+            document.getElementById('bmsStatusText').innerText = showBMS ? "On" : "Off";
 
-            // 2. Technical Math Calculations
-            const totalV = nominalVoltage * sCount;
-            const totalAh = cellCapacity * pCount;
-            const totalWh = totalV * totalAh;
-            const totalCells = sCount * pCount;
+            // คำนวณสูตรทางฟิสิกส์ไฟฟ้า (V และ Ah รวม)
+            const cellNominalV = chemistry === 'nmc' ? 3.7 : 3.2;
+            const calcV = cellNominalV * sCount;
+            const calcAh = cellCap * pCount;
 
-            // Update UI Dashboards
-            document.getElementById('totalVoltage').innerHTML = `${totalV.toFixed(1)} <span class="text-xs font-normal text-gray-400">V</span>`;
-            document.getElementById('totalCapacity').innerHTML = `${totalAh.toFixed(1)} <span class="text-xs font-normal text-gray-400">Ah</span>`;
-            document.getElementById('totalEnergy').innerText = totalWh.toFixed(0);
-            document.getElementById('totalCellsCount').innerText = totalCells;
-            document.getElementById('packConfigLabel').innerText = `${sCount}S${pCount}P`;
+            document.getElementById('totalVoltage').innerText = calcV.toFixed(1) + "V";
+            document.getElementById('totalCapacity').innerText = calcAh.toFixed(1) + "Ah";
 
-            // 3. Clear existing 3D Meshes safely
-            while(batteryGroup.children.length > 0){ 
-                const obj = batteryGroup.children[0];
-                batteryGroup.remove(obj); 
+            // ลบโมเดลเก่าทิ้งเพื่อวาดโมเดลใหม่ให้อยู่ในหน่วยความจำที่ปลอดภัย
+            while(mainBatteryGroup.children.length > 0) {
+                mainBatteryGroup.remove(mainBatteryGroup.children[0]);
             }
 
-            // Material Definitions
-            const wrapColor = chemistry === 'nmc' ? 0x0284c7 : 0x0d9488; // Deep Blue for NMC, Teal for LFP
-            const wrapperMaterial = new THREE.MeshStandardMaterial({ color: wrapColor, roughness: 0.3, metalness: 0.1 });
-            const posMaterial = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 }); // Red
-            const negMaterial = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.4 }); // Dark Gray
-            const busbarMaterial = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8, roughness: 0.2 }); // Shiny Copper/Gold
-            const bmsWireMaterial = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.5 }); // Blue Wire
-            const bmsBoardMaterial = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5 }); // Red PCB Board for BMS
+            // คำจำกัดความวัสดุและสีพื้นฐาน (สีเปลือกแบต, ขั้วบวกสีแดง, ขั้วลบสีดำ/เทาเข้ม)
+            const wrapperMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 }); // สีน้ำเงินแบบตัวอย่าง
+            const posTerminalMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2 }); // สีแดง (+)
+            const negTerminalMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.2 }); // สีดำเข้ม (-)
+            const nickelBarMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.1 }); // สีทองแดงเงาแวววาวตามภาพตัวอย่าง
 
-            // Sizing configurations based on shape
-            let cellW = 1.0, cellH = 2.2, cellD = 1.0; // Prismatic or general bounds
-            let spacingX = 1.2;
-            let spacingZ = 1.2;
+            // ระยะความกว้างและระยะห่างของแต่ละเซลล์
+            let radius = 0.5, height = 2.4;
+            let stepX = 1.2, stepZ = 1.2;
 
-            if (shape === 'cylindrical') {
-                cellW = 0.8; cellH = 2.0; cellD = 0.8;
-                spacingX = 0.9;
-                spacingZ = 0.9;
-            } else {
-                cellW = 1.3; cellH = 2.4; cellD = 0.5;
-                spacingX = 1.4;
-                spacingZ = 0.6;
-            }
+            // คลังเก็บพิกัดขั้วเพื่อใช้ลากโครงข่ายสาย Balance และบัสบาร์
+            let cellMatrix = [];
 
-            // Center calculations for offsetting camera target
-            const offsetX = ((sCount - 1) * spacingX) / 2;
-            const offsetZ = ((pCount - 1) * spacingZ) / 2;
+            // 1. วาดก้อนเซลล์แบตเตอรี่ (Cell Matrix Grid Setup)
+            for(let s = 0; s < sCount; s++) {
+                cellMatrix[s] = [];
+                // สลับขั้วไฟฟ้าบวก/ลบระหว่างชุดอนุกรม (Alternating Polarity Standard สำหรับงานวิศวกรรม)
+                const isRowFlipped = (s % 2 === 1);
 
-            // Arrays to map positions for Busbars and BMS routing
-            let cellPositions = [];
+                for(let p = 0; p < pCount; p++) {
+                    const singleCellGroup = new THREE.Group();
 
-            // Build Matrix of Cells
-            for (let s = 0; s < sCount; s++) {
-                cellPositions[s] = [];
-                // Alternate polarity every Series string step to minimize busbar lengths (Professional standard)
-                const isReversed = (s % 2 === 1);
-
-                for (let p = 0; p < pCount; p++) {
-                    const cellMeshGroup = new THREE.Group();
-                    
-                    // Create main Body
-                    let bodyGeom;
-                    if (shape === 'cylindrical') {
-                        bodyGeom = new THREE.CylinderGeometry(cellW/2, cellW/2, cellH, 32);
+                    // ส่วนบอดี้หลักตัวถังแบต
+                    let cellGeometry;
+                    if(shape === 'cylindrical') {
+                        cellGeometry = new THREE.CylinderGeometry(radius, radius, height, 32);
                     } else {
-                        bodyGeom = new THREE.BoxGeometry(cellW, cellH, cellD);
+                        cellGeometry = new THREE.BoxGeometry(1.0, height, 0.7);
                     }
-                    const body = new THREE.Mesh(bodyGeom, wrapperMaterial);
-                    body.castShadow = true;
-                    body.receiveShadow = true;
-                    cellMeshGroup.add(body);
+                    const bodyMesh = new THREE.Mesh(cellGeometry, wrapperMat);
+                    bodyMesh.castShadow = true;
+                    bodyMesh.receiveShadow = true;
+                    singleCellGroup.add(bodyMesh);
 
-                    // Create Terminals (Caps)
-                    const capHeight = 0.08;
-                    let capGeom = shape === 'cylindrical' ? 
-                        new THREE.CylinderGeometry(cellW/3, cellW/3, capHeight, 16) : 
-                        new THREE.BoxGeometry(cellW/4, capHeight, cellD/3);
+                    // สร้างฝาปิดหัวขั้วไฟฟ้า (Terminal Rings)
+                    const ringGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16);
+                    const posCap = new THREE.Mesh(ringGeometry, posTerminalMat);
+                    const negCap = new THREE.Mesh(ringGeometry, negTerminalMat);
 
-                    const posCap = new THREE.Mesh(capGeom, posMaterial);
-                    const negCap = new THREE.Mesh(capGeom, negMaterial);
-
-                    // Set standard offset paths based on polarity flipping logic
-                    if (!isReversed) {
-                        posCap.position.set(0, cellH/2 + capHeight/2, shape==='prismatic'? cellD/4 : 0);
-                        negCap.position.set(0, cellH/2 + capHeight/2, shape==='prismatic'? -cellD/4 : 0);
+                    // วางตำแหน่งขั้วบวกขั้วลบ แยกพิกัดออกจากกันชัดเจนเพื่อง่ายต่อการมองเห็นแนวบัสบาร์
+                    if(!isRowFlipped) {
+                        posCap.position.set(0, height/2 + 0.025, 0.25);
+                        negCap.position.set(0, height/2 + 0.025, -0.25);
                     } else {
-                        // Invert topology down to bottom or invert positions
-                        posCap.position.set(0, cellH/2 + capHeight/2, shape==='prismatic'? -cellD/4 : 0);
-                        negCap.position.set(0, cellH/2 + capHeight/2, shape==='prismatic'? cellD/4 : 0);
+                        posCap.position.set(0, height/2 + 0.025, -0.25);
+                        negCap.position.set(0, height/2 + 0.025, 0.25);
                     }
 
-                    cellMeshGroup.add(posCap);
-                    cellMeshGroup.add(negCap);
+                    singleCellGroup.add(posCap);
+                    singleCellGroup.add(negCap);
 
-                    // Global Placement Position
-                    const posX = s * spacingX - offsetX;
-                    const posZ = p * spacingZ - offsetZ;
-                    cellMeshGroup.position.set(posX, 0, posZ);
+                    // หาพิกัดศูนย์กลางการจัดวางโดยอ้างอิงให้ชุดแพ็คอยู่ตรงกลางหน้าจอพอดี
+                    const posX = (s * stepX) - ((sCount - 1) * stepX) / 2;
+                    const posZ = (p * stepZ) - ((pCount - 1) * stepZ) / 2;
+                    singleCellGroup.position.set(posX, 0, posZ);
 
-                    // If series row is inverted, visually rotate the physical cells 180 deg to show real structural flip
-                    if(isReversed && shape==='prismatic') {
-                       cellMeshGroup.rotation.y = Math.PI;
-                    }
+                    mainBatteryGroup.add(singleCellGroup);
 
-                    batteryGroup.add(cellMeshGroup);
-
-                    // Cache structural vectors for wiring routes
-                    cellPositions[s][p] = {
-                        pos: new THREE.Vector3(posX, cellH/2 + capHeight, posZ),
-                        isReversed: isReversed,
-                        posCapOffset: posCap.position,
-                        negCapOffset: negCap.position
+                    // บันทึกตำแหน่งขั้วลงอาร์เรย์พิกัด 3 มิติเพื่อไปใช้วาดบัสบาร์
+                    cellMatrix[s][p] = {
+                        globalPos: new THREE.Vector3(posX, height/2 + 0.05, posZ),
+                        posTerminalLocal: new THREE.Vector3(posX, height/2 + 0.05, posZ + (isRowFlipped ? -0.25 : 0.25)),
+                        negTerminalLocal: new THREE.Vector3(posX, height/2 + 0.05, posZ + (isRowFlipped ? 0.25 : -0.25))
                     };
                 }
             }
 
-            // 4. Generate Parallel Busbars (Group structural rows)
-            for (let s = 0; s < sCount; s++) {
-                if (pCount > 1) {
-                    const p1 = cellPositions[s][0];
-                    const p2 = cellPositions[s][pCount - 1];
-                    
-                    // Positive Cap Line Busbar
-                    const busbarPGeo = new THREE.BoxGeometry(0.15, 0.03, Math.abs(p2.pos.z - p1.pos.z) + 0.2);
-                    const busbarP = new THREE.Mesh(busbarPGeo, busbarMaterial);
-                    busbarP.position.set(p1.pos.x + p1.posCapOffset.x, p1.pos.y + 0.02, (p1.pos.z + p2.pos.z)/2);
-                    batteryGroup.add(busbarP);
+            // 2. สร้างเส้นทางเชื่อมต่อแผ่นนิกเกิล/บัสบาร์แบบขนาน (Parallel Connection Busbar)
+            for(let s = 0; s < sCount; s++) {
+                if(pCount > 1) {
+                    const firstCell = cellMatrix[s][0];
+                    const lastCell = cellMatrix[s][pCount-1];
+                    const barLength = Math.abs(lastCell.globalPos.z - firstCell.globalPos.z) + 0.2;
 
-                    // Negative Cap Line Busbar
-                    const busbarNGeo = new THREE.BoxGeometry(0.15, 0.03, Math.abs(p2.pos.z - p1.pos.z) + 0.2);
-                    const busbarN = new THREE.Mesh(busbarNGeo, busbarMaterial);
-                    busbarN.position.set(p1.pos.x + p1.posDropOffset?.x || p1.pos.x + p1.negCapOffset.x, p1.pos.y + 0.02, (p1.pos.z + p2.pos.z)/2);
-                    batteryGroup.add(busbarN);
+                    // บัสบาร์ขนานฝั่งขั้วบวก
+                    const pBarGeo = new THREE.BoxGeometry(0.18, 0.04, barLength);
+                    const pBarMesh = new THREE.Mesh(pBarGeo, nickelBarMat);
+                    pBarMesh.position.set(firstCell.posTerminalLocal.x, firstCell.posTerminalLocal.y + 0.02, (firstCell.posTerminalLocal.z + lastCell.posTerminalLocal.z)/2);
+                    mainBatteryGroup.add(pBarMesh);
+
+                    // บัสบาร์ขนานฝั่งขั้วลบ
+                    const nBarGeo = new THREE.BoxGeometry(0.18, 0.04, barLength);
+                    const nBarMesh = new THREE.Mesh(nBarGeo, nickelBarMat);
+                    nBarMesh.position.set(firstCell.negTerminalLocal.x, firstCell.negTerminalLocal.y + 0.02, (firstCell.negTerminalLocal.z + lastCell.negTerminalLocal.z)/2);
+                    mainBatteryGroup.add(nBarMesh);
                 }
             }
 
-            // 5. Generate Series Interconnect Busbars (Bridge between blocks)
-            for (let s = 0; s < sCount - 1; s++) {
-                const currentBlockCell = cellPositions[s][0];
-                const nextBlockCell = cellPositions[s+1][0];
+            // 3. สร้างแผ่นบัสบาร์ทองแดงเชื่อมระหว่างชุดอนุกรม (Series Bridge Busbar)
+            for(let s = 0; s < sCount - 1; s++) {
+                const currentSBlock = cellMatrix[s];
+                const nextSBlock = cellMatrix[s+1];
 
-                // Connect the main bridge layers across blocks
-                const bridgeGeo = new THREE.BoxGeometry(Math.abs(nextBlockCell.pos.x - currentBlockCell.pos.x), 0.03, pCount * spacingZ);
-                const bridge = new THREE.Mesh(bridgeGeo, busbarMaterial);
-                bridge.position.set((currentBlockCell.pos.x + nextBlockCell.pos.x)/2, currentBlockCell.pos.y + 0.04, 0);
-                batteryGroup.add(bridge);
+                // ลากสะพานไฟเชื่อมจาก ขั้วลบของกลุ่มปัจจุบัน ไปยัง ขั้วบวกของกลุ่มถัดไป เพื่อทำการ Series แรงดันไฟฟ้า
+                const bridgeStart = currentSBlock[0].negTerminalLocal;
+                const bridgeEnd = nextSBlock[0].posTerminalLocal;
+
+                // ตรวจสอบระยะกว้างครอบคลุมจำนวนขนานทั้งหมด
+                const bridgeWidth = pCount > 1 ? (pCount - 1) * stepZ + 0.4 : 0.4;
+                const bridgeGeo = new THREE.BoxGeometry(stepX, 0.04, bridgeWidth);
+                const seriesBridgeMesh = new THREE.Mesh(bridgeGeo, nickelBarMat);
+
+                seriesBridgeMesh.position.set((bridgeStart.x + bridgeEnd.x)/2, bridgeStart.y + 0.04, (bridgeStart.z + bridgeEnd.z)/2);
+                mainBatteryGroup.add(seriesBridgeMesh);
             }
 
-            // 6. Output Terminal Extensions (Professional Long Leads)
-            const mainPositiveCell = cellPositions[0][0];
-            const mainNegativeCell = cellPositions[sCount - 1][0];
+            // 4. ลากขั้วสายไฟ Output ออกมาภายนอกขอบตัวแพ็คให้เห็นเด่นชัดเพื่อนำไปใช้งานต่อ (เหมือนในภาพสเก็ตช์ตัวอย่าง)
+            const mainPositiveCorner = cellMatrix[0][0].posTerminalLocal;
+            const mainNegativeCorner = cellMatrix[sCount-1][pCount-1].negTerminalLocal;
 
-            // Positive Output Terminal Lead (Red Sleeve Tip)
-            const leadLength = 2.0;
-            const posLeadGroup = new THREE.Group();
-            const posLeadGeo = new THREE.CylinderGeometry(0.06, 0.06, leadLength, 16);
-            posLeadGeo.rotateZ(Math.PI / 2); // Orient outward
-            const posLeadCable = new THREE.Mesh(posLeadGeo, posMaterial);
-            posLeadCable.position.set(-leadLength/2, 0, 0);
-            posLeadGroup.add(posLeadCable);
-            
-            // Lug interface terminal
-            const lugGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.04, 16);
-            const lug = new THREE.Mesh(lugGeo, busbarMaterial);
-            lug.position.set(-leadLength, 0, 0);
-            posLeadGroup.add(lug);
+            // สายไฟขั้วบวกหลักสีแดง (Main Battery Pack Output Leads +)
+            const posCableGroup = new THREE.Group();
+            const cableLength = 2.5;
+            const cableGeo = new THREE.CylinderGeometry(0.08, 0.08, cableLength, 16);
+            cableGeo.rotateZ(Math.PI / 2); // หมุนให้นอนพุ่งออกจากแบตเตอรี่
 
-            posLeadGroup.position.set(mainPositiveCell.pos.x + mainPositiveCell.posCapOffset.x, mainPositiveCell.pos.y + 0.1, -offsetZ - 0.2);
-            batteryGroup.add(posLeadGroup);
+            const posCableMesh = new THREE.Mesh(cableGeo, posTerminalMat);
+            posCableMesh.position.set(cableLength/2, 0, 0);
+            posCableGroup.add(posCableMesh);
 
-            // Negative Output Terminal Lead (Black/Zinc Sleeve Tip)
-            const negLeadGroup = new THREE.Group();
-            const negLeadCable = new THREE.Mesh(posLeadGeo, negMaterial);
-            negLeadCable.position.set(leadLength/2, 0, 0);
-            negLeadGroup.add(negLeadCable);
+            // หางปลาขั้วต่อปลายสาย (Metal Lug interface ring)
+            const lugGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.03, 16);
+            const lugMesh = new THREE.Mesh(lugGeo, nickelBarMat);
+            lugMesh.position.set(cableLength, 0, 0);
+            posCableGroup.add(lugMesh);
 
-            const lugNeg = new THREE.Mesh(lugGeo, busbarMaterial);
-            lugNeg.position.set(leadLength, 0, 0);
-            negLeadGroup.add(lugNeg);
+            posCableGroup.position.set(mainPositiveCorner.x, mainPositiveCorner.y + 0.1, mainPositiveCorner.z + 0.5);
+            mainBatteryGroup.add(posCableGroup);
 
-            negLeadGroup.position.set(mainNegativeCell.pos.x + mainNegativeCell.negCapOffset.x, mainNegativeCell.pos.y + 0.1, offsetZ + 0.2);
-            batteryGroup.add(negLeadGroup);
+            // สายไฟขั้วลบหลักสีดำ (Main Battery Pack Output Leads -)
+            const negCableGroup = new THREE.Group();
+            const negCableMesh = new THREE.Mesh(cableGeo, negTerminalMat);
+            negCableMesh.position.set(-cableLength/2, 0, 0);
+            negCableGroup.add(negCableMesh);
+
+            const lugNegMesh = new THREE.Mesh(lugGeo, nickelBarMat);
+            lugNegMesh.position.set(-cableLength, 0, 0);
+            negCableGroup.add(lugNegMesh);
+
+            negCableGroup.position.set(mainNegativeCorner.x, mainNegativeCorner.y + 0.1, mainNegativeCorner.z - 0.5);
+            mainBatteryGroup.add(negCableGroup);
 
 
-            // 7. BMS System Overlay Option
-            if (showBMS) {
-                // Render physical BMS Board structure floating near pack bounds
-                const bmsW = 1.5, bmsH = 0.1, bmsD = (pCount * spacingZ) * 0.8 || 1.0;
-                const bmsGeo = new THREE.BoxGeometry(bmsW, bmsH, bmsD);
-                const bmsBoard = new THREE.Mesh(bmsGeo, bmsBoardMaterial);
+            // 5. ระบบจำลองการเชื่อมต่อสายไฟระบบจัดสรรบาลานซ์เซลล์ (BMS Balance Harness Simulation Map)
+            if(showBMS) {
+                // สร้างแผงวงจรบอร์ดควบคุม BMS ปริ้นท์สีเขียวเข้มจำลองเกาะอยู่ด้านข้างของชุดแบตเตอรี่
+                const pcbGeo = new THREE.BoxGeometry(1.6, 0.1, 2.0);
+                const pcbMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 }); // สีเขียวแผ่น PCB แบบในรูปภาพ
+                const bmsBoardMesh = new THREE.Mesh(pcbGeo, pcbMat);
                 
-                // Position BMS safely on the side profile layout
-                bmsBoard.position.set(offsetX + spacingX*0.8, 0, 0);
-                batteryGroup.add(bmsBoard);
+                // จัดตำแหน่งให้ลอยอยู่บริเวณตรงกลางด้านหน้าแถวแพ็ค
+                bmsBoardMesh.position.set(0, -0.2, ((pCount - 1) * stepZ) / 2 + 1.2);
+                mainBatteryGroup.add(bmsBoardMesh);
 
-                // Create dynamic multi-stranded balance harness wires
-                for(let s = 0; s < sCount; s++) {
-                    const targetCell = cellPositions[s][0];
-                    
-                    const points = [];
-                    points.push(new THREE.Vector3(bmsBoard.position.x, bmsBoard.position.y, (s / sCount) * bmsD - bmsD/2));
-                    points.push(new THREE.Vector3(targetCell.pos.x, targetCell.pos.y + 0.2, targetCell.pos.z));
+                // ชิปไอซีไมโครคอนโทรลเลอร์สีดำประทับตราอักษรบนแผ่นบอร์ด
+                const icGeo = new THREE.BoxGeometry(0.6, 0.08, 0.6);
+                const icMesh = new THREE.Mesh(icGeo, negTerminalMat);
+                icMesh.position.set(0, 0.06, 0);
+                bmsBoardMesh.add(icMesh);
 
-                    const wireGeo = new THREE.BoxGeometry(Math.abs(points[0].x - points[1].x), 0.02, 0.02);
-                    const wire = new THREE.Mesh(wireGeo, bmsWireMaterial);
-                    wire.position.set((points[0].x + points[1].x)/2, (points[0].y + points[1].y)/2, (points[0].z + points[1].z)/2);
+                // เริ่มกระบวนการลากเส้นจำลองสาย Balance Leads: B-, B0, B1, B2... จนถึง B+ เข้าสู่เซลล์ตามลำดับวิศวกรรมจริง
+                const colorsHarness = [0x27272a, 0xd97706, 0x2563eb, 0xdc2626]; // ดำ (B-), ส้ม (B1), น้ำเงิน (B2), แดง (B+)
+                
+                for(let b = 0; b <= sCount; b++) {
+                    let targetPoint;
+                    if(b === 0) {
+                        targetPoint = cellMatrix[0][0].negTerminalLocal; // จุดต่อสาย B- เข้าขั้วลบแรกสุดสัมบูรณ์
+                    } else {
+                        targetPoint = cellMatrix[b-1][0].posTerminalLocal; // จุดบาลานซ์ลำดับอนุกรมถัดๆ ไป (B1, B2... B+)
+                    }
+
+                    // จุดต้นทางออกจากขั้วสล็อตพินบนบอร์ด BMS
+                    const startPoint = new THREE.Vector3(
+                        bmsBoardMesh.position.x + (b * 0.15) - (sCount * 0.075), 
+                        bmsBoardMesh.position.y + 0.05, 
+                        bmsBoardMesh.position.z
+                    );
+
+                    // ดัดโค้งเส้นทางเดินสายเพื่อความสวยงามสมจริงแบบธรรมชาติไม่ให้สายตึงเป็นเส้นตรงทื่อๆ
+                    const midPoint = new THREE.Vector3((startPoint.x + targetPoint.x)/2, targetPoint.y + 0.5, (startPoint.z + targetPoint.z)/2);
                     
-                    batteryGroup.add(wire);
+                    const wireCurvePath = new THREE.CatmullRomCurve3([startPoint, midPoint, targetPoint]);
+                    const wireGeometry = new THREE.TubeGeometry(wireCurvePath, 24, 0.025, 8, false);
+                    
+                    const selectedColor = colorsHarness[b % colorsHarness.length];
+                    const wireMaterial = new THREE.MeshStandardMaterial({ color: selectedColor, roughness: 0.6 });
+                    const singleWireMesh = new THREE.Mesh(wireGeometry, wireMaterial);
+                    
+                    mainBatteryGroup.add(singleWireMesh);
                 }
             }
-
-            // Adjust system control target frame boundings smoothly
-            controls.target.set(0, 0, 0);
         }
 
-        // Event Triggers & Initial Bindings
-        document.getElementById('btnRender').addEventListener('click', updateSimulation);
-        document.getElementById('toggleBMS').addEventListener('change', updateSimulation);
+        // จัดการผูกตัวตรวจจับความเคลื่อนไหวข้อมูล (Event Triggers) เข้ากับ UI Components ทั้งหมด
+        document.getElementById('cellShape').addEventListener('change', rebuildBatteryPack);
+        document.getElementById('cellChemistry').addEventListener('change', rebuildBatteryPack);
+        document.getElementById('cellCapacity').addEventListener('input', rebuildBatteryPack);
+        document.getElementById('seriesCount').addEventListener('input', rebuildBatteryPack);
+        document.getElementById('parallelCount').addEventListener('input', rebuildBatteryPack);
+        document.getElementById('toggleBMS').addEventListener('change', rebuildBatteryPack);
 
-        // Core Boot Engine Setup
+        // รันคำสั่งเปิดเครื่องทำงานทันที
         init3D();
-        updateSimulation(); // Instant deployment draw
+        rebuildBatteryPack();
     </script>
 </body>
 </html>
