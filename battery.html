@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Battery Engineering Simulator | GitHub Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        canvas { display: block; outline: none; }
+        .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        input[type="range"] { accent-color: #f59e0b; cursor: pointer; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col md:flex-row text-slate-200">
+
+    <div class="w-full md:w-96 glass flex flex-col h-2/5 md:h-full z-10 shadow-2xl overflow-y-auto no-scrollbar">
+        <div class="p-6 border-b border-white/10">
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                <span class="text-amber-500">⚡</span> Battery Engineering
+            </h1>
+            <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-[0.2em] font-semibold">3D Simulation Pro</p>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <div class="space-y-4">
+                <h2 class="text-xs font-bold text-amber-500 uppercase tracking-wider">1. ข้อมูลเซลล์แบตเตอรี่</h2>
+                <div>
+                    <label class="block text-sm mb-1.5 text-slate-400">รูปทรงของเซลล์</label>
+                    <select id="cellShape" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-amber-500 outline-none transition-all">
+                        <option value="cylindrical">ทรงกระบอก (Cylindrical เช่น 18650)</option>
+                        <option value="prismatic">สี่เหลี่ยม (Prismatic Block)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm mb-1.5 text-slate-400">ชนิดแบตเตอรี่</label>
+                        <select id="cellChem" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm">
+                            <option value="nmc">NMC (3.7V)</option>
+                            <option value="lfp">LFP (3.2V)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1.5 text-slate-400">ความจุ Ah / Cell</label>
+                        <input id="cellAh" type="number" value="5.0" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-amber-400 font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 pt-4 border-t border-white/5">
+                <h2 class="text-xs font-bold text-amber-500 uppercase tracking-wider">2. การจัดเรียงชุดแพ็ค</h2>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span class="text-slate-400">จำนวนอนุกรม (Series - S)</span>
+                            <span id="sLabel" class="text-white font-bold bg-amber-500/20 px-2 rounded">4S</span>
+                        </div>
+                        <input id="sCount" type="range" min="1" max="24" value="4" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span class="text-slate-400">จำนวนขนาน (Parallel - P)</span>
+                            <span id="pLabel" class="text-white font-bold bg-amber-500/20 px-2 rounded">2P</span>
+                        </div>
+                        <input id="pCount" type="range" min="1" max="10" value="2" class="w-full">
+                    </div>
+                </div>
+            </div>
+
+            <button id="renderBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-amber-500/20 active:scale-95">
+                ประมวลผลโมเดล 3D
+            </button>
+        </div>
+
+        <div class="mt-auto p-6 bg-slate-950/80 border-t border-white/10 space-y-4">
+            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">ผลการคำนวณแรงดันและพลังงาน</h2>
+            <div class="grid grid-cols-1 gap-2">
+                <div class="flex justify-between items-center p-3 bg-green-500/5 border border-green-500/20 rounded-lg">
+                    <span class="text-[10px] text-green-500 uppercase font-bold">แรงดันสูงสุด (Full)</span>
+                    <span id="resMax" class="text-lg font-bold text-green-400 mono">-- V</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                    <span class="text-[10px] text-amber-500 uppercase font-bold">แรงดันปกติ (Nominal)</span>
+                    <span id="resNom" class="text-lg font-bold text-amber-400 mono">-- V</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                    <span class="text-[10px] text-red-500 uppercase font-bold">แรงดันต่ำสุด (Empty)</span>
+                    <span id="resMin" class="text-lg font-bold text-red-400 mono">-- V</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg mt-2">
+                    <span class="text-[10px] text-blue-500 uppercase font-bold">ความจุรวม Ah</span>
+                    <span id="resAh" class="text-lg font-bold text-blue-400 mono">-- Ah</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 relative bg-slate-950">
+        <div id="three-canvas" class="w-full h-full"></div>
+        
+        <div class="absolute top-6 right-6 p-4 glass rounded-xl text-[10px] space-y-2 pointer-events-none border border-white/5 shadow-2xl">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div> 
+                <span class="text-slate-300">ขั้วบวก (+) Terminal</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 bg-slate-700 rounded-full"></div> 
+                <span class="text-slate-300">ขั้วลบ (-) Terminal</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-1 bg-amber-400"></div> 
+                <span class="text-slate-300">Busbar / Nickel Strip</span>
+            </div>
+            <div class="mt-2 pt-2 border-t border-white/10 text-slate-500 italic">
+                * หมุนดูได้ทุกทิศทางด้วยเมาส์
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let mainPack = new THREE.Group();
+        const viewport = document.getElementById('three-canvas');
+
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+
+            camera = new THREE.PerspectiveCamera(40, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
+            camera.position.set(12, 10, 15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            viewport.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(10, 20, 15);
+            sun.castShadow = true;
+            scene.add(sun);
+
+            // Floor Grid
+            const grid = new THREE.GridHelper(40, 40, 0x1e293b, 0x0f172a);
+            grid.position.y = -2.5;
+            scene.add(grid);
+
+            scene.add(mainPack);
+
+            window.addEventListener('resize', onResize);
+            animate();
+            renderBattery();
+        }
+
+        function onResize() {
+            camera.aspect = viewport.clientWidth / viewport.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function renderBattery() {
+            const shape = document.getElementById('cellShape').value;
+            const chem = document.getElementById('cellChem').value;
+            const cellAh = parseFloat(document.getElementById('cellAh').value) || 0;
+            const s = parseInt(document.getElementById('sCount').value);
+            const p = parseInt(document.getElementById('pCount').value);
+
+            document.getElementById('sLabel').innerText = s + "S";
+            document.getElementById('pLabel').innerText = p + "P";
+
+            // Voltage Calculations
+            const stats = {
+                nmc: { max: 4.2, nom: 3.7, min: 3.0 },
+                lfp: { max: 3.65, nom: 3.2, min: 2.5 }
+            }[chem];
+
+            document.getElementById('resMax').innerText = (s * stats.max).toFixed(1) + " V";
+            document.getElementById('resNom').innerText = (s * stats.nom).toFixed(1) + " V";
+            document.getElementById('resMin').innerText = (s * stats.min).toFixed(1) + " V";
+            document.getElementById('resAh').innerText = (p * cellAh).toFixed(1) + " Ah";
+
+            // Clear Scene
+            while(mainPack.children.length > 0) mainPack.remove(mainPack.children[0]);
+
+            // Materials
+            const cellColor = chem === 'nmc' ? 0x2563eb : 0x0d9488;
+            const cellMat = new THREE.MeshStandardMaterial({ color: cellColor, roughness: 0.4 });
+            const posMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+            const negMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            const busbarMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8, roughness: 0.1 });
+            const nickelMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9 });
+
+            const spacingX = shape === 'cylindrical' ? 1.2 : 1.6;
+            const spacingZ = shape === 'cylindrical' ? 1.2 : 1.0;
+            const height = 2.5;
+
+            const totalWidth = (s - 1) * spacingX;
+            const totalDepth = (p - 1) * spacingZ;
+
+            let terminals = [];
+
+            // 1. สร้างเซลล์แบตเตอรี่ (Create Matrix)
+            for(let si = 0; si < s; si++) {
+                terminals[si] = { pos: [], neg: [] };
+                // สลับขั้วในแต่ละแถวอนุกรมเพื่อให้การต่อ Busbar ทำได้ง่ายเหมือนของจริง
+                const rowFlipped = (si % 2 === 1); 
+
+                for(let pi = 0; pi < p; pi++) {
+                    const group = new THREE.Group();
+                    
+                    // Body
+                    let bodyGeo;
+                    if(shape === 'cylindrical') {
+                        bodyGeo = new THREE.CylinderGeometry(0.5, 0.5, height, 32);
+                    } else {
+                        bodyGeo = new THREE.BoxGeometry(1.4, height, 0.7);
+                    }
+                    const body = new THREE.Mesh(bodyGeo, cellMat);
+                    group.add(body);
+
+                    // Terminals Configuration
+                    if(shape === 'cylindrical') {
+                        // แบบถ่าน 18650: ขั้วบวกปุ่มนูน (สีแดง) บน / ขั้วลบแบน (สีเทา) ล่าง
+                        const topGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16);
+                        const topCap = new THREE.Mesh(topGeo, rowFlipped ? negMat : posMat);
+                        topCap.position.y = height/2 + 0.05;
+                        group.add(topCap);
+
+                        const botGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.05, 32);
+                        const botCap = new THREE.Mesh(botGeo, rowFlipped ? posMat : negMat);
+                        botCap.position.y = -height/2 - 0.025;
+                        group.add(botCap);
+
+                        // บันทึกตำแหน่งขั้วสำหรับการลาก Busbar
+                        terminals[si].pos.push(new THREE.Vector3(si * spacingX - totalWidth/2, (rowFlipped ? -height/2 - 0.1 : height/2 + 0.1), pi * spacingZ - totalDepth/2));
+                        terminals[si].neg.push(new THREE.Vector3(si * spacingX - totalWidth/2, (rowFlipped ? height/2 + 0.1 : -height/2 - 0.1), pi * spacingZ - totalDepth/2));
+
+                    } else {
+                        // แบบ Prismatic: ขั้ว Stud แยกห่างกันบนหัวแบต
+                        const studGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.3, 16);
+                        const nutGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.12, 6);
+                        
+                        const studP = new THREE.Mesh(studGeo, posMat);
+                        const nutP = new THREE.Mesh(nutGeo, nickelMat); 
+                        nutP.position.y = 0.1; studP.add(nutP);
+                        
+                        const studN = new THREE.Mesh(studGeo, negMat);
+                        const nutN = new THREE.Mesh(nutGeo, nickelMat); 
+                        nutN.position.y = 0.1; studN.add(nutN);
+
+                        // วางขั้วห่างกัน
+                        if(!rowFlipped) {
+                            studP.position.set(0.4, height/2 + 0.15, 0);
+                            studN.position.set(-0.4, height/2 + 0.15, 0);
+                        } else {
+                            studP.position.set(-0.4, height/2 + 0.15, 0);
+                            studN.position.set(0.4, height/2 + 0.15, 0);
+                        }
+                        
+                        group.add(studP);
+                        group.add(studN);
+
+                        terminals[si].pos.push(new THREE.Vector3(si * spacingX - totalWidth/2 + studP.position.x, height/2 + 0.3, pi * spacingZ - totalDepth/2));
+                        terminals[si].neg.push(new THREE.Vector3(si * spacingX - totalWidth/2 + studN.position.x, height/2 + 0.3, pi * spacingZ - totalDepth/2));
+                    }
+
+                    group.position.set(si * spacingX - totalWidth/2, 0, pi * spacingZ - totalDepth/2);
+                    mainPack.add(group);
+                }
+            }
+
+            // 2. ลาก Busbar ขนาน (Parallel Straps)
+            for(let si = 0; si < s; si++) {
+                if(p > 1) {
+                    const firstP = terminals[si].pos[0];
+                    const lastP = terminals[si].pos[p-1];
+                    const firstN = terminals[si].neg[0];
+                    const lastN = terminals[si].neg[p-1];
+
+                    // บัสบาร์ขนานฝั่งบวก
+                    const pBar = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, Math.abs(lastP.z - firstP.z) + 0.4), nickelMat);
+                    pBar.position.set(firstP.x, firstP.y, (firstP.z + lastP.z)/2);
+                    mainPack.add(pBar);
+
+                    // บัสบาร์ขนานฝั่งลบ
+                    const nBar = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, Math.abs(lastN.z - firstN.z) + 0.4), nickelMat);
+                    nBar.position.set(firstN.x, firstN.y, (firstN.z + lastN.z)/2);
+                    mainPack.add(nBar);
+                }
+            }
+
+            // 3. ลาก Busbar อนุกรม (Series Bridges)
+            for(let si = 0; si < s - 1; si++) {
+                const start = terminals[si].neg[0];
+                const end = terminals[si+1].pos[0];
+                
+                const bridge = new THREE.Mesh(new THREE.BoxGeometry(spacingX, 0.06, p * spacingZ), busbarMat);
+                bridge.position.set((start.x + end.x)/2, (start.y + end.y)/2 + 0.05, 0);
+                mainPack.add(bridge);
+            }
+
+            // 4. สายไฟ Output หลัก (Main Leads)
+            const cableGeo = new THREE.CylinderGeometry(0.12, 0.12, 5, 16);
+            cableGeo.rotateZ(Math.PI/2);
+            
+            // ขั้วบวกหลัก (สีแดง)
+            const mainPos = terminals[0].pos[0];
+            const posCable = new THREE.Mesh(cableGeo, posMat);
+            posCable.position.set(mainPos.x - 2.5, mainPos.y + 0.2, 0);
+            mainPack.add(posCable);
+            
+            // ขั้วลบหลัก (สีเทาเข้ม)
+            const mainNeg = terminals[s-1].neg[0];
+            const negCable = new THREE.Mesh(cableGeo, negMat);
+            negCable.position.set(mainNeg.x + 2.5, mainNeg.y + 0.2, 0);
+            mainPack.add(negCable);
+        }
+
+        document.getElementById('renderBtn').addEventListener('click', renderBattery);
+        document.getElementById('sCount').addEventListener('input', renderBattery);
+        document.getElementById('pCount').addEventListener('input', renderBattery);
+        document.getElementById('cellShape').addEventListener('change', renderBattery);
+        document.getElementById('cellChem').addEventListener('change', renderBattery);
+        document.getElementById('cellAh').addEventListener('input', renderBattery);
+
+        initScene();
+    </script>
+</body>
+</html>
