@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PackForge &mdash; 3D Battery Pack Assembly Simulator</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Fonts: Inter for UI, JetBrains Mono for telemetry/numeric readouts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Import map for Three.js ES Modules -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+  :root{
+    --slate-950:#020617;
+    --panel-bg: rgba(15, 23, 42, 0.55);
+    --panel-border: rgba(148, 163, 184, 0.14);
+    --copper: #d97706;
+    --copper-bright:#f59e0b;
+    --silver:#cbd5e1;
+    --term-pos:#dc2626;
+    --term-neg:#334155;
+  }
+  html,body{
+    margin:0; padding:0; overflow:hidden;
+    background:var(--slate-950);
+    font-family:'Inter', sans-serif;
+    color:#e2e8f0;
+  }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  /* Glassmorphism sidebar */
+  .glass-panel{
+    background: var(--panel-bg);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid var(--panel-border);
+  }
+  .glass-card{
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(148,163,184,0.10);
+  }
+
+  /* Custom scrollbar for sidebar */
+  #sidebar::-webkit-scrollbar{ width:6px; }
+  #sidebar::-webkit-scrollbar-track{ background:transparent; }
+  #sidebar::-webkit-scrollbar-thumb{ background:rgba(148,163,184,0.25); border-radius:4px; }
+  #sidebar::-webkit-scrollbar-thumb:hover{ background:rgba(148,163,184,0.4); }
+
+  /* Inputs */
+  .field-input, .field-select{
+    background: rgba(2,6,23,0.6);
+    border: 1px solid rgba(148,163,184,0.18);
+    color:#f1f5f9;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .field-input:focus, .field-select:focus{
+    outline:none;
+    border-color: var(--copper-bright);
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+  }
+  .field-label{
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  /* Dashboard readout cards */
+  .readout-card{
+    position:relative;
+    overflow:hidden;
+  }
+  .readout-value{
+    font-family:'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .readout-glow{
+    position:absolute; inset:0;
+    background: radial-gradient(120px 60px at 15% 0%, rgba(245,158,11,0.10), transparent 70%);
+    pointer-events:none;
+  }
+
+  /* Legend swatches */
+  .swatch{ width:12px; height:12px; border-radius:3px; display:inline-block; flex-shrink:0; }
+
+  /* Loading overlay */
+  #loading-overlay{
+    transition: opacity .5s ease;
+  }
+
+  /* Tooltip for viewport hint */
+  .hint-pill{
+    background: rgba(2,6,23,0.65);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(148,163,184,0.15);
+  }
+
+  ::selection{ background: rgba(245,158,11,0.3); }
+
+  /* Range slider (S/P quick nudge, optional not used but kept minimal) */
+  input[type="number"]::-webkit-inner-spin-button{ opacity: 0.6; }
+</style>
+</head>
+
+<body class="h-screen w-screen">
+
+<div class="flex h-full w-full">
+
+  <!-- ============================= SIDEBAR ============================= -->
+  <aside id="sidebar" class="glass-panel w-[380px] min-w-[380px] h-full overflow-y-auto z-20 flex flex-col">
+
+    <!-- Header -->
+    <div class="px-6 pt-6 pb-5 border-b border-white/5">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-700 flex items-center justify-center shadow-lg shadow-amber-900/30">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"/><path d="M9 3V1h6v2"/><path d="M9 13h6"/></svg>
+        </div>
+        <div>
+          <h1 class="text-[15px] font-bold tracking-tight text-slate-50 leading-none">PackForge</h1>
+          <p class="text-[11px] text-slate-500 mt-1 leading-none">Battery Assembly &amp; Busbar Simulator</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURATION -->
+    <div class="px-6 py-5 border-b border-white/5">
+      <h2 class="text-[11px] font-bold tracking-widest text-amber-500/90 uppercase mb-4">Cell Configuration</h2>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label">Cell Shape</label>
+          <select id="cellShape" class="field-select w-full mt-1.5 rounded-md px-3 py-2 text-sm">
+            <option value="cylindrical" selected>Cylindrical (18650)</option>
+            <option value="prismatic">Prismatic</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Chemistry</label>
+          <select id="chemistry" class="field-select w-full mt-1.5 rounded-md px-3 py-2 text-sm">
+            <option value="NMC" selected>NMC (Li-ion)</option>
+            <option value="LFP">LFP (LiFePO4)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <label class="field-label">Cell Capacity (Ah)</label>
+        <input id="cellAh" type="number" step="0.1" min="0.1" value="3.5" class="field-input w-full mt-1.5 rounded-md px-3 py-2 text-sm mono">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label class="field-label">Series (S)</label>
+          <input id="sCount" type="text" inputmode="numeric" value="6" class="field-input w-full mt-1.5 rounded-md px-3 py-2 text-sm mono">
+        </div>
+        <div>
+          <label class="field-label">Parallel (P)</label>
+          <input id="pCount" type="text" inputmode="numeric" value="4" class="field-input w-full mt-1.5 rounded-md px-3 py-2 text-sm mono">
+        </div>
+      </div>
+
+      <div class="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+        <span>Configuration</span>
+        <span id="configLabel" class="mono text-amber-500/90 font-semibold">6S4P &middot; 24 Cells</span>
+      </div>
+
+      <button id="rebuildBtn" class="mt-4 w-full bg-gradient-to-b from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.98] transition-all text-slate-950 text-sm font-bold py-2.5 rounded-md shadow-lg shadow-amber-900/20">
+        Rebuild Assembly
+      </button>
+      <p id="perfWarning" class="hidden mt-2 text-[11px] text-red-400/90 leading-snug"></p>
+    </div>
+
+    <!-- ELECTRICAL DASHBOARD -->
+    <div class="px-6 py-5 border-b border-white/5">
+      <h2 class="text-[11px] font-bold tracking-widest text-amber-500/90 uppercase mb-4">Electrical Output</h2>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="readout-card glass-card rounded-lg px-3.5 py-3">
+          <div class="readout-glow"></div>
+          <p class="field-label mb-1">Max Voltage</p>
+          <p><span id="vMax" class="readout-value text-xl font-bold text-slate-50">25.20</span><span class="text-xs text-slate-500 ml-1">V</span></p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Full charge</p>
+        </div>
+        <div class="readout-card glass-card rounded-lg px-3.5 py-3">
+          <div class="readout-glow"></div>
+          <p class="field-label mb-1">Nominal Voltage</p>
+          <p><span id="vNom" class="readout-value text-xl font-bold text-amber-400">22.20</span><span class="text-xs text-slate-500 ml-1">V</span></p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Normal operation</p>
+        </div>
+        <div class="readout-card glass-card rounded-lg px-3.5 py-3">
+          <div class="readout-glow"></div>
+          <p class="field-label mb-1">Min Voltage</p>
+          <p><span id="vMin" class="readout-value text-xl font-bold text-slate-50">18.00</span><span class="text-xs text-slate-500 ml-1">V</span></p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Cutoff / empty</p>
+        </div>
+        <div class="readout-card glass-card rounded-lg px-3.5 py-3">
+          <div class="readout-glow"></div>
+          <p class="field-label mb-1">Total Capacity</p>
+          <p><span id="totalAh" class="readout-value text-xl font-bold text-slate-50">14.0</span><span class="text-xs text-slate-500 ml-1">Ah</span></p>
+          <p class="text-[10px] text-slate-500 mt-0.5"><span id="totalWh">311</span> Wh nominal</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="px-6 py-5">
+      <h2 class="text-[11px] font-bold tracking-widest text-amber-500/90 uppercase mb-4">Interconnect Legend</h2>
+      <div class="space-y-2.5 text-[12px] text-slate-300">
+        <div class="flex items-center gap-2.5"><span class="swatch" style="background:#dc2626;"></span> Positive Terminal (+)</div>
+        <div class="flex items-center gap-2.5"><span class="swatch" style="background:#334155; border:1px solid #64748b;"></span> Negative Terminal (&minus;)</div>
+        <div class="flex items-center gap-2.5"><span class="swatch" style="background:#cbd5e1;"></span> Nickel Strip &mdash; Parallel Link</div>
+        <div class="flex items-center gap-2.5"><span class="swatch" style="background:#d97706;"></span> Busbar &mdash; Series Bridge</div>
+        <div class="flex items-center gap-2.5"><span class="swatch" style="background:#b91c1c;"></span> Output Lead (+)</div>
+        <div class="flex items-center gap-2.5"><span class="swatch" style="background:#1e293b; border:1px solid #475569;"></span> Output Lead (&minus;)</div>
+      </div>
+    </div>
+
+    <div class="mt-auto px-6 py-4 border-t border-white/5 text-[10.5px] text-slate-600 flex items-center justify-between">
+      <span>PackForge Sim v1.0</span>
+      <span class="mono">WebGL / Three.js</span>
+    </div>
+  </aside>
+
+  <!-- ============================= 3D VIEWPORT ============================= -->
+  <main class="relative flex-1 h-full">
+    <canvas id="viewport" class="w-full h-full block"></canvas>
+
+    <!-- Hint pill -->
+    <div class="hint-pill absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full px-4 py-2 text-[11px] text-slate-300 flex items-center gap-4 z-10">
+      <span class="flex items-center gap-1.5"><span class="text-slate-500">Left-drag</span> Rotate</span>
+      <span class="w-px h-3 bg-slate-600"></span>
+      <span class="flex items-center gap-1.5"><span class="text-slate-500">Right-drag</span> Pan</span>
+      <span class="w-px h-3 bg-slate-600"></span>
+      <span class="flex items-center gap-1.5"><span class="text-slate-500">Scroll</span> Zoom</span>
+    </div>
+
+    <!-- Top-right badge -->
+    <div class="absolute top-5 right-5 hint-pill rounded-lg px-3.5 py-2 text-right z-10">
+      <p class="text-[10px] text-slate-500 uppercase tracking-wider">Cells Rendered</p>
+      <p id="cellCountBadge" class="mono text-sm font-bold text-amber-400">24</p>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="absolute inset-0 flex items-center justify-center bg-slate-950 z-30">
+      <div class="text-center">
+        <div class="w-10 h-10 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-3"></div>
+        <p class="text-sm text-slate-400">Initializing simulation engine&hellip;</p>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script type="module">
+// =====================================================================================
+// PackForge — 3D Battery Pack Assembly Simulator
+// Engine: Three.js (ESM) + OrbitControls
+// =====================================================================================
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// -------------------------------------------------------------------------------------
+// Constants: chemistry voltage table & geometry dimensions
+// -------------------------------------------------------------------------------------
+const CHEMISTRY = {
+  NMC: { max: 4.20, nom: 3.70, min: 3.00, label: 'NMC (Li-ion)' },
+  LFP: { max: 3.65, nom: 3.20, min: 2.50, label: 'LFP (LiFePO4)' }
+};
+
+// Cylindrical (18650-style) dimensions
+const CYL_R = 0.9;
+const CYL_H = 3.6;
+const CYL_SPACING_X = CYL_R * 2 + 0.35;   // pitch between cells within a row (parallel axis)
+const CYL_SPACING_Z = CYL_H * 0.62;       // pitch between rows (series axis) — leaves busbar gap
+const CYL_TOP_OFFSET = CYL_H / 2 + 0.24;  // rail height above group center
+const CYL_BOT_OFFSET = -(CYL_H / 2 + 0.10);
+
+// Prismatic dimensions
+const PRISM_W = 1.6;   // stacking pitch (parallel axis)
+const PRISM_D = 1.0;   // depth (series axis footprint)
+const PRISM_H = 3.0;
+const PRISM_ROW_PITCH = PRISM_D * 0.64 * 2 + 0.5; // = 1.78 -> gap for busbar between rows
+const PRISM_STUD_OFFSET = PRISM_D * 0.32;
+const PRISM_TOP_OFFSET = PRISM_H / 2 + 0.40;
+
+const BASE_LIFT = 0.5;      // pack floats above the grid floor (visibility for bottom busbars)
+const MAX_RENDER_CELLS = 720; // performance cap on rendered geometry (electrical math is unaffected)
+
+// -------------------------------------------------------------------------------------
+// Shared materials (created once, reused across all meshes for performance)
+// -------------------------------------------------------------------------------------
+const MAT = {
+  cylBody:  new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.55, roughness: 0.38 }),
+  prismBody:new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.35, roughness: 0.5 }),
+  pos:      new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.25, roughness: 0.4 }),
+  neg:      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.4,  roughness: 0.55 }),
+  studRiser:new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8,  roughness: 0.3 }),
+  nickel:   new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9,  roughness: 0.22 }),
+  busbar:   new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.75, roughness: 0.3 }),
+  leadPos:  new THREE.MeshStandardMaterial({ color: 0xb91c1c, metalness: 0.15, roughness: 0.65 }),
+  leadNeg:  new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.15, roughness: 0.65 }),
+  lugPos:   new THREE.MeshStandardMaterial({ color: 0xf87171, metalness: 0.6, roughness: 0.3 }),
+  lugNeg:   new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.3 })
+};
+
+// =====================================================================================
+// Scene bootstrap
+// =====================================================================================
+const canvas = document.getElementById('viewport');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020617);
+scene.fog = new THREE.FogExp2(0x020617, 0.016);
+
+const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(14, 12, 18);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+// Orbit controls — explicit mouse mapping per spec:
+// LEFT = rotate (360°), RIGHT = pan, WHEEL = zoom/dolly
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.mouseButtons = {
+  LEFT: THREE.MOUSE.ROTATE,
+  MIDDLE: THREE.MOUSE.DOLLY,
+  RIGHT: THREE.MOUSE.PAN
+};
+controls.minDistance = 3;
+controls.maxDistance = 120;
+controls.target.set(0, 1.5, 0);
+
+// Lighting — 3-point engineering studio setup
+scene.add(new THREE.AmbientLight(0x8fa3c7, 0.45));
+
+const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.35);
+keyLight.position.set(12, 18, 10);
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x6fa8ff, 0.5);
+fillLight.position.set(-14, 8, -6);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xffb060, 0.6);
+rimLight.position.set(-4, 6, -14);
+scene.add(rimLight);
+
+const hemi = new THREE.HemisphereLight(0x334155, 0x020617, 0.4);
+scene.add(hemi);
+
+// Ground grid (faint, engineering-blueprint feel)
+const grid = new THREE.GridHelper(200, 100, 0x1e293b, 0x0f172a);
+grid.position.y = 0;
+grid.material.transparent = true;
+grid.material.opacity = 0.55;
+scene.add(grid);
+
+let packGroup = new THREE.Group();
+scene.add(packGroup);
+
+// =====================================================================================
+// Geometry builders
+// =====================================================================================
+
+/** Builds a single cylindrical (18650-style) cell, centered on its own vertical midpoint. */
+function buildCylindricalCell() {
+  const g = new THREE.Group();
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R, CYL_R, CYL_H, 24), MAT.cylBody);
+  g.add(body);
+
+  // Red button top (+)
+  const button = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R * 0.52, CYL_R * 0.62, 0.2, 20), MAT.pos);
+  button.position.y = CYL_H / 2 + 0.10;
+  g.add(button);
+
+  // Insulation ring detail around the button
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(CYL_R * 0.66, 0.035, 8, 24), MAT.studRiser);
+  ring.position.y = CYL_H / 2 + 0.01;
+  ring.rotation.x = Math.PI / 2;
+  g.add(ring);
+
+  // Flat gray base (-)
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R * 0.97, CYL_R * 0.97, 0.06, 24), MAT.neg);
+  base.position.y = -CYL_H / 2 - 0.03;
+  g.add(base);
+
+  return g;
+}
+
+/** Builds a single prismatic cell with two hex-bolt terminal studs set far apart on top. */
+function buildPrismaticCell() {
+  const g = new THREE.Group();
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(PRISM_W * 0.92, PRISM_H, PRISM_D * 0.92),
+    MAT.prismBody
+  );
+  g.add(body);
+
+  // Positive stud (forward edge, +Z)
+  g.add(buildTerminalStud(PRISM_STUD_OFFSET, MAT.pos));
+  // Negative stud (rear edge, -Z)
+  g.add(buildTerminalStud(-PRISM_STUD_OFFSET, MAT.neg));
+
+  return g;
+
+  function buildTerminalStud(zOffset, capMat) {
+    const stud = new THREE.Group();
+    const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.24, 12), MAT.studRiser);
+    riser.position.set(0, PRISM_H / 2 + 0.12, zOffset);
+    stud.add(riser);
+    const hex = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.13, 6), capMat);
+    hex.position.set(0, PRISM_H / 2 + 0.24 + 0.065, zOffset);
+    stud.add(hex);
+    return stud;
+  }
+}
+
+/** A flat rectangular rail bar (nickel strip or busbar). */
+function buildRailBar(length, depth, material) {
+  return new THREE.Mesh(new THREE.BoxGeometry(length, 0.09, depth), material);
+}
+
+/** A thick output lead cable running along Z, capped with a rounded lug. */
+function buildOutputLead(length, material, lugMaterial) {
+  const g = new THREE.Group();
+  const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, length, 16), material);
+  cable.rotation.x = Math.PI / 2;
+  cable.position.z = length / 2;
+  g.add(cable);
+  const lug = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.22, 20), lugMaterial);
+  lug.rotation.x = Math.PI / 2;
+  lug.position.z = length + 0.02;
+  g.add(lug);
+  return g;
+}
+
+// =====================================================================================
+// Pack assembly — Cylindrical
+// Rows = series stages (S). Each row alternates flip orientation so that adjacent rows'
+// facing rails share equal height, letting a short busbar bridge them directly.
+// =====================================================================================
+function buildCylindricalPack(S, P) {
+  const group = new THREE.Group();
+  const rowWidth = (P - 1) * CYL_SPACING_X;
+  const railLength = rowWidth + CYL_R * 2.6;
+
+  const rows = []; // { topPolarity, bottomPolarity, topConsumed, bottomConsumed, z }
+
+  for (let r = 0; r < S; r++) {
+    const flipped = r % 2 === 1;
+    const z = r * CYL_SPACING_Z;
+
+    for (let i = 0; i < P; i++) {
+      const cell = buildCylindricalCell();
+      const x = (i - (P - 1) / 2) * CYL_SPACING_X;
+      cell.position.set(x, BASE_LIFT + CYL_H / 2, z);
+      if (flipped) cell.rotation.x = Math.PI;
+      group.add(cell);
+    }
+
+    // Parallel-connection rails for this row (always present, top + bottom)
+    const topRail = buildRailBar(railLength, CYL_R * 1.5, MAT.nickel);
+    topRail.position.set(0, BASE_LIFT + CYL_TOP_OFFSET, z);
+    group.add(topRail);
+
+    const bottomRail = buildRailBar(railLength, CYL_R * 1.5, MAT.nickel);
+    bottomRail.position.set(0, BASE_LIFT + CYL_BOT_OFFSET, z);
+    group.add(bottomRail);
+
+    rows.push({
+      topPolarity: flipped ? '-' : '+',
+      bottomPolarity: flipped ? '+' : '-',
+      topConsumed: false,
+      bottomConsumed: false,
+      z
+    });
+  }
+
+  // Series busbars: alternate bridging at top height (even r) / bottom height (odd r)
+  for (let r = 0; r < S - 1; r++) {
+    const useTop = r % 2 === 0;
+    const y = BASE_LIFT + (useTop ? CYL_TOP_OFFSET : CYL_BOT_OFFSET);
+    const zA = rows[r].z;
+    const zB = rows[r + 1].z;
+    const busbar = buildRailBar(railLength * 0.97, Math.abs(zB - zA) + CYL_R * 1.4, MAT.busbar);
+    busbar.position.set(0, y + 0.01, (zA + zB) / 2);
+    group.add(busbar);
+
+    if (useTop) { rows[r].topConsumed = true; rows[r + 1].topConsumed = true; }
+    else { rows[r].bottomConsumed = true; rows[r + 1].bottomConsumed = true; }
+  }
+
+  // Master output leads: find the free (unconsumed) rail on the first and last row
+  const first = rows[0];
+  const last = rows[S - 1];
+
+  attachCylindricalLead(group, first, railLength, -1, BASE_LIFT); // extends toward -Z
+  attachCylindricalLead(group, last, railLength, 1, BASE_LIFT);   // extends toward +Z
+
+  const totalCells = S * P;
+  const bbox = new THREE.Box3().setFromObject(group);
+  return { group, totalCells, bbox };
+}
+
+function attachCylindricalLead(group, row, railLength, direction, baseLift) {
+  const useTop = !row.topConsumed;
+  const polarity = useTop ? row.topPolarity : row.bottomPolarity;
+  const y = baseLift + (useTop ? CYL_TOP_OFFSET : CYL_BOT_OFFSET);
+  const isPos = polarity === '+';
+  const leadMat = isPos ? MAT.leadPos : MAT.leadNeg;
+  const lugMat = isPos ? MAT.lugPos : MAT.lugNeg;
+
+  const lead = buildOutputLead(3.2, leadMat, lugMat);
+  lead.position.set(0, y, row.z + direction * (railLength * 0.06));
+  if (direction < 0) lead.rotation.y = Math.PI;
+  group.add(lead);
+}
+
+// =====================================================================================
+// Pack assembly — Prismatic
+// Rows = series stages (S). Terminal studs sit far apart (+Z / -Z) on every cell, so no
+// row flip is required — the forward (+) rail of one row directly faces the rear (-)
+// rail of the next, allowing a short flat busbar between every consecutive row pair.
+// =====================================================================================
+function buildPrismaticPack(S, P) {
+  const group = new THREE.Group();
+  const rowWidth = (P - 1) * PRISM_W;
+  const railLength = rowWidth + PRISM_W * 0.85;
+
+  const rows = []; // { z }
+
+  for (let r = 0; r < S; r++) {
+    const z = r * PRISM_ROW_PITCH;
+    for (let i = 0; i < P; i++) {
+      const cell = buildPrismaticCell();
+      const x = (i - (P - 1) / 2) * PRISM_W;
+      cell.position.set(x, BASE_LIFT + PRISM_H / 2, z);
+      group.add(cell);
+    }
+
+    // Parallel rails: forward (+) and rear (-)
+    const posRail = buildRailBar(railLength, 0.14, MAT.nickel);
+    posRail.position.set(0, BASE_LIFT + PRISM_TOP_OFFSET, z + PRISM_STUD_OFFSET);
+    group.add(posRail);
+
+    const negRail = buildRailBar(railLength, 0.14, MAT.nickel);
+    negRail.position.set(0, BASE_LIFT + PRISM_TOP_OFFSET, z - PRISM_STUD_OFFSET);
+    group.add(negRail);
+
+    rows.push({ z });
+  }
+
+  // Series busbars: forward rail of row r <-> rear rail of row r+1 (every pair, all on top)
+  for (let r = 0; r < S - 1; r++) {
+    const zA = rows[r].z + PRISM_STUD_OFFSET;
+    const zB = rows[r + 1].z - PRISM_STUD_OFFSET;
+    const busbar = buildRailBar(railLength * 0.96, Math.abs(zB - zA), MAT.busbar);
+    busbar.position.set(0, BASE_LIFT + PRISM_TOP_OFFSET + 0.01, (zA + zB) / 2);
+    group.add(busbar);
+  }
+
+  // Master leads: rear rail of row0 (-) and forward rail of last row (+)
+  const leadNeg = buildOutputLead(3.2, MAT.leadNeg, MAT.lugNeg);
+  leadNeg.position.set(0, BASE_LIFT + PRISM_TOP_OFFSET, rows[0].z - PRISM_STUD_OFFSET);
+  leadNeg.rotation.y = Math.PI;
+  group.add(leadNeg);
+
+  const leadPos = buildOutputLead(3.2, MAT.leadPos, MAT.lugPos);
+  leadPos.position.set(0, BASE_LIFT + PRISM_TOP_OFFSET, rows[S - 1].z + PRISM_STUD_OFFSET);
+  group.add(leadPos);
+
+  const totalCells = S * P;
+  const bbox = new THREE.Box3().setFromObject(group);
+  return { group, totalCells, bbox };
+}
+
+// =====================================================================================
+// Rebuild orchestration
+// =====================================================================================
+function disposeGroup(group) {
+  group.traverse((obj) => {
+    if (obj.isMesh) obj.geometry.dispose();
+  });
+}
+
+function computeRenderGrid(S, P) {
+  const total = S * P;
+  if (total <= MAX_RENDER_CELLS) return { rS: S, rP: P, capped: false, total };
+  const scale = Math.sqrt(MAX_RENDER_CELLS / total);
+  const rS = Math.max(1, Math.round(S * scale));
+  const rP = Math.max(1, Math.round(P * scale));
+  return { rS, rP, capped: true, total };
+}
+
+function frameCamera(bbox) {
+  const size = new THREE.Vector3();
+  bbox.getSize(size);
+  const center = new THREE.Vector3();
+  bbox.getCenter(center);
+
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const fitDist = (maxDim / 2) / Math.tan((camera.fov * Math.PI / 180) / 2) * 1.35;
+
+  controls.target.copy(center);
+  const dir = new THREE.Vector3(0.62, 0.55, 0.85).normalize();
+  camera.position.copy(center).addScaledVector(dir, Math.max(fitDist, 6));
+  camera.near = Math.max(0.1, fitDist / 100);
+  camera.far = fitDist * 20;
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+function rebuildPack() {
+  const shape = document.getElementById('cellShape').value;
+  const S = parseCount(document.getElementById('sCount').value, 1);
+  const P = parseCount(document.getElementById('pCount').value, 1);
+
+  const { rS, rP, capped, total } = computeRenderGrid(S, P);
+
+  scene.remove(packGroup);
+  disposeGroup(packGroup);
+
+  const result = shape === 'cylindrical' ? buildCylindricalPack(rS, rP) : buildPrismaticPack(rS, rP);
+  packGroup = result.group;
+  scene.add(packGroup);
+
+  frameCamera(result.bbox);
+
+  const warningEl = document.getElementById('perfWarning');
+  if (capped) {
+    warningEl.textContent = `Displaying a representative ${rS}\u00D7${rP} grid (${rS * rP} cells) for real-time performance. Electrical values below reflect the full ${S}\u00D7${P} configuration (${total} cells).`;
+    warningEl.classList.remove('hidden');
+  } else {
+    warningEl.classList.add('hidden');
+  }
+
+  document.getElementById('cellCountBadge').textContent = (rS * rP).toLocaleString();
+  document.getElementById('configLabel').textContent = `${S}S${P}P \u00B7 ${total.toLocaleString()} Cells`;
+
+  updateDashboard(S, P);
+}
+
+function parseCount(raw, fallback) {
+  const n = parseInt(String(raw).replace(/[^0-9]/g, ''), 10);
+  if (!Number.isFinite(n) || n < 1) return fallback;
+  return Math.min(n, 100000);
+}
+
+// =====================================================================================
+// Electrical dashboard
+// =====================================================================================
+function updateDashboard(S, P) {
+  const chemKey = document.getElementById('chemistry').value;
+  const chem = CHEMISTRY[chemKey];
+  const cellAh = parseFloat(document.getElementById('cellAh').value) || 0;
+
+  const vMax = S * chem.max;
+  const vNom = S * chem.nom;
+  const vMin = S * chem.min;
+  const totalAh = P * cellAh;
+  const totalWh = vNom * totalAh;
+
+  document.getElementById('vMax').textContent = vMax.toFixed(2);
+  document.getElementById('vNom').textContent = vNom.toFixed(2);
+  document.getElementById('vMin').textContent = vMin.toFixed(2);
+  document.getElementById('totalAh').textContent = totalAh.toFixed(1);
+  document.getElementById('totalWh').textContent = Math.round(totalWh).toLocaleString();
+}
+
+function updateDashboardOnly() {
+  const S = parseCount(document.getElementById('sCount').value, 1);
+  const P = parseCount(document.getElementById('pCount').value, 1);
+  document.getElementById('configLabel').textContent = `${S}S${P}P \u00B7 ${(S * P).toLocaleString()} Cells`;
+  updateDashboard(S, P);
+}
+
+// =====================================================================================
+// Event wiring
+// =====================================================================================
+document.getElementById('rebuildBtn').addEventListener('click', rebuildPack);
+document.getElementById('chemistry').addEventListener('change', updateDashboardOnly);
+document.getElementById('cellAh').addEventListener('input', updateDashboardOnly);
+document.getElementById('sCount').addEventListener('input', updateDashboardOnly);
+document.getElementById('pCount').addEventListener('input', updateDashboardOnly);
+document.getElementById('cellShape').addEventListener('change', rebuildPack);
+
+// Also allow Enter key inside S/P fields to trigger a rebuild
+['sCount', 'pCount'].forEach((id) => {
+  document.getElementById(id).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') rebuildPack();
+  });
+});
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', onResize);
+
+// =====================================================================================
+// Render loop
+// =====================================================================================
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// =====================================================================================
+// Boot
+// =====================================================================================
+rebuildPack();
+animate();
+
+const overlay = document.getElementById('loading-overlay');
+requestAnimationFrame(() => {
+  overlay.style.opacity = '0';
+  setTimeout(() => overlay.remove(), 550);
+});
+
+</script>
+</body>
+</html>
