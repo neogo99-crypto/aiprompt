@@ -368,7 +368,7 @@
         <div class="type-toggle">
           <button class="type-btn active" id="btnNMC" onclick="setType('nmc')">
             <span class="t-name">NMC</span>
-            <span class="t-full">3.6V nominal · 4.2V max</span>
+            <span class="t-full">3.7V nominal · 4.2V max</span>
           </button>
           <button class="type-btn" id="btnLFP" onclick="setType('lfp')">
             <span class="t-name">LFP</span>
@@ -477,7 +477,7 @@
 
 <script>
 const SPEC = {
-  nmc: { name:'NMC', max:4.2, nom:3.6, min:3.0 },
+  nmc: { name:'NMC', max:4.2, nom:3.7, min:3.0 },
   lfp: { name:'LFP', max:3.65, nom:3.2, min:2.5 }
 };
 let currentType = 'nmc';
